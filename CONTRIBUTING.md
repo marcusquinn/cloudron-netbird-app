@@ -41,7 +41,6 @@ cloudron exec --app netbird
 
 - **Real-world testing** -- Install on a Cloudron instance, report issues
 - **Cloudron OIDC integration** -- Connect NetBird auth to Cloudron's OIDC addon so users can log in with their Cloudron credentials
-- **Logo** -- Create or source a 256x256 `logo.png`
 
 ### Medium Priority
 

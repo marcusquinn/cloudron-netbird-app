@@ -178,7 +178,7 @@ cloudron-netbird-app/
   supervisord.conf         # Multi-process management (nginx + netbird-server)
   config.template.yaml     # Default config reference
   nginx-netbird.conf       # Default nginx config reference
-  logo.png                 # App icon (256x256) -- TODO: add
+  logo.png                 # App icon (256x256)
   PACKAGING-NOTES.md       # Detailed feasibility assessment and notes
   LICENSE                  # MIT
 ```
@@ -191,7 +191,7 @@ cloudron-netbird-app/
 
 3. **Single account mode**: All users join the same network by default. This is appropriate for most self-hosted deployments.
 
-4. **No logo yet**: A `logo.png` (256x256) needs to be added. NetBird's logo is available from their [brand assets](https://netbird.io).
+4. **Logo**: Uses NetBird's official logo from their [dashboard repository](https://github.com/netbirdio/dashboard).
 
 ## Upstream
 
