@@ -2,9 +2,9 @@
   "id": "io.netbird.cloudronapp",
   "title": "NetBird",
   "author": "Marcus Quinn <marcus@marcusquinn.com>",
-  "description": "Self-hosted WireGuard mesh VPN with SSO, MFA, and granular access controls. Connect devices into a secure peer-to-peer overlay network.",
+  "description": "Self-hosted WireGuard mesh VPN with SSO, MFA, and granular access controls. Connect devices into a secure peer-to-peer overlay network. Supports Cloudron SSO via OIDC.",
   "tagline": "Zero-config WireGuard mesh VPN for teams",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "upstreamVersion": "0.65.3",
   "healthCheckPath": "/api/accounts",
   "httpPort": 8080,
@@ -17,7 +17,13 @@
   "memoryLimit": 536870912,
   "addons": {
     "localstorage": {},
-    "postgresql": {}
+    "postgresql": {},
+    "oidc": {
+      "loginRedirectUri": "/oauth2/callback/cloudron",
+      "logoutRedirectUri": "/",
+      "tokenSignatureAlgorithm": "RS256"
+    },
+    "turn": {}
   },
   "tcpPorts": {
     "STUN_PORT": {
@@ -32,7 +38,8 @@
     "wireguard",
     "mesh",
     "networking",
-    "security"
+    "security",
+    "sso"
   ],
-  "postInstallMessage": "NetBird management server is running. Visit the app URL to access the dashboard. UDP port ${STUN_PORT} must be accessible from your NetBird clients for NAT traversal."
+  "postInstallMessage": "NetBird management server is running. Visit the app URL to access the dashboard. Cloudron users can log in via SSO. UDP port ${STUN_PORT} must be accessible from your NetBird clients for NAT traversal."
 }

@@ -11,7 +11,7 @@ NetBird connects devices into a secure peer-to-peer WireGuard mesh network. Unli
 | Protocol | WireGuard (kernel or userspace) |
 | Architecture | Peer-to-peer mesh (no hub-and-spoke) |
 | NAT traversal | ICE + STUN + TURN relay fallback |
-| Auth | Any OIDC provider (Keycloak, Google, Entra ID, etc.) |
+| Auth | Any OIDC provider (Cloudron SSO, Keycloak, Google, Entra ID, etc.) |
 | Access control | Group-based policies with posture checks |
 | API | Full REST API + Terraform provider |
 | License | BSD-3 (client), AGPL-3.0 (server) |
@@ -25,6 +25,8 @@ This Cloudron app packages the **NetBird management server**, which includes:
 - **Relay server** -- TURN fallback for peers behind strict NAT
 - **STUN server** -- NAT type detection (UDP 3478)
 - **Dashboard** -- web UI for administration
+- **Cloudron SSO** -- log in with your Cloudron credentials via OIDC
+- **Cloudron TURN** -- uses Cloudron's built-in TURN server for NAT traversal relay
 
 NetBird clients on your devices connect to this management server to join the mesh.
 
@@ -79,6 +81,62 @@ sudo netbird up \
   --management-url https://netbird.your-cloudron.example
 ```
 
+## Cloudron SSO (Single Sign-On)
+
+This package integrates with Cloudron's built-in OIDC provider. Users can log into NetBird with their Cloudron credentials -- no separate Keycloak or other IdP needed.
+
+### How it works
+
+1. Cloudron provides OIDC credentials to the app via the `oidc` addon
+2. On startup, the app registers Cloudron as a "Generic OIDC" identity provider in NetBird
+3. The NetBird login page shows a "Cloudron" button alongside the local email/password option
+4. Users authenticate against Cloudron's user directory and are redirected back to NetBird
+
+### Automatic setup
+
+If you have a Personal Access Token (PAT) stored at `/app/data/config/.admin_pat`, the Cloudron OIDC provider is registered automatically on each app start. To set this up:
+
+1. Log into the NetBird dashboard with your admin account
+2. Go to **Settings > Personal Access Tokens**
+3. Create a new token
+4. Shell into the container and save it:
+
+```bash
+cloudron exec --app netbird
+echo "YOUR_PAT_HERE" > /app/data/config/.admin_pat
+chmod 600 /app/data/config/.admin_pat
+```
+
+5. Restart the app -- Cloudron SSO will be registered automatically
+
+### Manual setup
+
+If you prefer to configure it manually (or the automatic registration didn't work):
+
+1. Log into the NetBird dashboard
+2. Go to **Settings > Identity Providers > Add Identity Provider**
+3. Select **Generic OIDC**
+4. Fill in the fields (these are printed in the app logs on startup):
+   - **Name**: `Cloudron`
+   - **Issuer**: (from `CLOUDRON_OIDC_ISSUER` -- check app logs)
+   - **Client ID**: (from `CLOUDRON_OIDC_CLIENT_ID` -- check app logs)
+   - **Client Secret**: (from `CLOUDRON_OIDC_CLIENT_SECRET` -- available inside the container)
+5. Copy the **Redirect URL** that NetBird shows and verify it matches the `loginRedirectUri` in the manifest
+
+### Notes
+
+- Local email/password authentication remains available alongside Cloudron SSO
+- Multiple identity providers can coexist (Cloudron + Google + Keycloak, etc.)
+- NetBird supports JWT group sync -- Cloudron user groups can map to NetBird access control groups
+
+## Cloudron TURN Integration
+
+This package uses Cloudron's built-in TURN server (via the `turn` addon) as an additional relay for NAT traversal. This means:
+
+- Peers behind strict/symmetric NAT can relay through Cloudron's TURN server
+- The standalone STUN port (UDP 3478) is still used for NAT type detection
+- Both STUN and TURN work together for maximum connectivity
+
 ## Architecture
 
 ```text
@@ -103,6 +161,8 @@ Cloudron Server
 |  +---------------------------------------------------+ |
 |                                                        |
 |  PostgreSQL addon (Cloudron-managed)                   |
+|  OIDC addon (Cloudron SSO)                             |
+|  TURN addon (Cloudron TURN relay)                      |
 |  UDP :3478 (STUN, exposed via tcpPorts)                |
 +-------------------------------------------------------+
 ```
@@ -115,9 +175,9 @@ Uses Cloudron's PostgreSQL addon automatically. No manual database setup require
 
 ### Identity Provider
 
-**Default**: Embedded IdP (Dex). Users are managed directly from the NetBird dashboard.
+**Built-in**: Cloudron SSO via OIDC addon (see [Cloudron SSO](#cloudron-sso-single-sign-on) above).
 
-**Recommended for production**: Connect to an OIDC provider. If you run Keycloak on Cloudron, you can use it as the IdP for single sign-on across all your apps.
+**Also available**: Local email/password (NetBird's embedded IdP), or any additional OIDC provider added via the dashboard (Google, Microsoft, Keycloak, Authentik, etc.). Multiple providers can coexist.
 
 ### Persistent Data
 
@@ -125,7 +185,7 @@ All persistent data is stored in `/app/data/` and included in Cloudron backups:
 
 | Path | Contents |
 |------|----------|
-| `/app/data/config/` | Management server config, encryption key |
+| `/app/data/config/` | Management server config, encryption key, admin PAT |
 | `/app/data/netbird/` | Server state and data |
 | `/app/data/dashboard/` | Dashboard environment config |
 
@@ -160,11 +220,14 @@ cloudron uninstall --app netbird
 - [ ] Dashboard loads at app URL
 - [ ] `/setup` page appears on first run
 - [ ] Admin account creation works
+- [ ] Cloudron SSO login button appears on login page
+- [ ] Cloudron users can log in via SSO
 - [ ] Setup key creation works
 - [ ] Client connects with setup key
 - [ ] Peers can ping each other through the mesh
+- [ ] Peers behind NAT connect via TURN relay
 - [ ] App survives restart (`cloudron restart --app netbird`)
-- [ ] Backup/restore preserves all state
+- [ ] Backup/restore preserves all state (including OIDC config)
 - [ ] Memory stays within 512 MB limit
 - [ ] STUN port (UDP 3478) is accessible from clients
 
@@ -174,7 +237,7 @@ cloudron uninstall --app netbird
 cloudron-netbird-app/
   CloudronManifest.json    # Cloudron app metadata and addon requirements
   Dockerfile               # Build instructions
-  start.sh                 # Runtime entry point (config injection, process launch)
+  start.sh                 # Runtime entry point (config injection, OIDC setup, process launch)
   supervisord.conf         # Multi-process management (nginx + netbird-server)
   config.template.yaml     # Default config reference
   nginx-netbird.conf       # Default nginx config reference
@@ -187,7 +250,7 @@ cloudron-netbird-app/
 
 1. **STUN port**: UDP 3478 must be directly accessible -- it cannot go through Cloudron's HTTP reverse proxy. Verify your firewall allows this.
 
-2. **No Cloudron SSO yet**: The initial version uses NetBird's built-in IdP. Cloudron OIDC addon integration is planned for a future release.
+2. **OIDC auto-registration requires a PAT**: The automatic Cloudron SSO setup needs a Personal Access Token saved to `/app/data/config/.admin_pat`. Without it, you can still add Cloudron as an OIDC provider manually via the dashboard.
 
 3. **Single account mode**: All users join the same network by default. This is appropriate for most self-hosted deployments.
 
@@ -198,14 +261,15 @@ cloudron-netbird-app/
 - **NetBird**: https://github.com/netbirdio/netbird
 - **NetBird Docs**: https://docs.netbird.io
 - **NetBird Self-Hosting**: https://docs.netbird.io/selfhosted/selfhosted-quickstart
+- **NetBird OIDC Guide**: https://docs.netbird.io/selfhosted/identity-providers/generic-oidc
 
 ## Contributing
 
 Contributions are welcome. The main areas that need work:
 
 1. **Testing on a real Cloudron instance** -- the packaging scaffold is complete but needs real-world validation
-2. **Cloudron OIDC integration** -- connect NetBird auth to Cloudron's OIDC addon
-3. **Logo** -- add a 256x256 `logo.png`
+2. **OIDC flow testing** -- verify the Cloudron SSO login flow end-to-end
+3. **TURN relay testing** -- verify peers behind strict NAT can connect via Cloudron's TURN server
 4. **App Store submission** -- once tested, submit to the [Cloudron App Store](https://docs.cloudron.io/packaging/publishing/)
 
 ### Submitting to the Cloudron App Store

@@ -40,17 +40,19 @@ cloudron exec --app netbird
 ### High Priority
 
 - **Real-world testing** -- Install on a Cloudron instance, report issues
-- **Cloudron OIDC integration** -- Connect NetBird auth to Cloudron's OIDC addon so users can log in with their Cloudron credentials
+- **OIDC flow testing** -- Verify the Cloudron SSO login flow end-to-end (automatic and manual registration)
+- **TURN relay testing** -- Verify peers behind strict NAT can connect via Cloudron's TURN server
 
 ### Medium Priority
 
-- **LDAP addon integration** -- Sync Cloudron users to NetBird groups
+- **LDAP addon integration** -- Sync Cloudron users to NetBird groups via LDAP
+- **JWT group sync** -- Map Cloudron user groups to NetBird access control groups
 - **Health check endpoint** -- Implement a proper `/health` check
 - **Memory profiling** -- Verify 512 MB is sufficient under load
 
 ### Nice to Have
 
-- **Cloudron backup verification** -- Confirm backup/restore cycle preserves all state
+- **Cloudron backup verification** -- Confirm backup/restore cycle preserves all state (including OIDC config and PAT)
 - **Upgrade testing** -- Test upgrading between NetBird versions
 - **Documentation improvements**
 
