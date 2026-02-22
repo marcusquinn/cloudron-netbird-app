@@ -1,8 +1,12 @@
 # Cloudron
 .cloudron/
+~/.cloudron.json
 
 # Build artifacts
 *.tar.gz
+
+# Docker
+*.log
 
 # OS
 .DS_Store
