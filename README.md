@@ -246,15 +246,27 @@ cloudron-netbird-app/
   LICENSE                  # MIT
 ```
 
+## Reverse Proxy Feature
+
+NetBird v0.65+ includes a [Reverse Proxy](https://docs.netbird.io/manage/reverse-proxy) feature (beta) that can expose internal services on mesh peers to the public internet with automatic TLS and optional SSO/password/PIN authentication.
+
+**This feature is NOT compatible with this Cloudron package.** The reverse proxy requires [Traefik with TLS passthrough](https://docs.netbird.io/selfhosted/reverse-proxy) in front of the management server. Cloudron uses nginx for TLS termination, which does not support TLS passthrough. The NetBird proxy container (`netbirdio/netbird-proxy`) needs to handle TLS termination itself, which is impossible when Cloudron's nginx has already terminated TLS.
+
+If you need the reverse proxy feature, deploy NetBird standalone (outside Cloudron) with Traefik as documented in the [NetBird self-hosted guide](https://docs.netbird.io/selfhosted/selfhosted-quickstart).
+
+**What still works without it**: All core mesh VPN functionality -- peer-to-peer WireGuard tunnels, NAT traversal, access control, DNS, network routes, setup keys, and the management dashboard. The reverse proxy is an optional add-on for exposing internal services publicly; the mesh itself does not depend on it.
+
 ## Known Limitations
 
 1. **STUN port**: UDP 3478 must be directly accessible -- it cannot go through Cloudron's HTTP reverse proxy. Verify your firewall allows this.
 
 2. **OIDC auto-registration requires a PAT**: The automatic Cloudron SSO setup needs a Personal Access Token saved to `/app/data/config/.admin_pat`. Without it, you can still add Cloudron as an OIDC provider manually via the dashboard.
 
-3. **Single account mode**: All users join the same network by default. This is appropriate for most self-hosted deployments.
+3. **Reverse proxy not supported**: NetBird's reverse proxy feature requires Traefik with TLS passthrough, which is incompatible with Cloudron's nginx. See [Reverse Proxy Feature](#reverse-proxy-feature) above.
 
-4. **Logo**: Uses NetBird's official logo from their [dashboard repository](https://github.com/netbirdio/dashboard).
+4. **Single account mode**: All users join the same network by default. This is appropriate for most self-hosted deployments.
+
+5. **No pre-shared keys or Rosenpass**: These features are not yet compatible with the reverse proxy or some relay configurations.
 
 ## Upstream
 
@@ -262,6 +274,7 @@ cloudron-netbird-app/
 - **NetBird Docs**: https://docs.netbird.io
 - **NetBird Self-Hosting**: https://docs.netbird.io/selfhosted/selfhosted-quickstart
 - **NetBird OIDC Guide**: https://docs.netbird.io/selfhosted/identity-providers/generic-oidc
+- **NetBird Reverse Proxy**: https://docs.netbird.io/manage/reverse-proxy (not compatible with Cloudron -- see above)
 
 ## Contributing
 
