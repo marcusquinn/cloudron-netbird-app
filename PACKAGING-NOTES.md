@@ -4,6 +4,17 @@
 
 **Overall: Medium complexity, achievable.**
 
+### Architecture (v2.0.0)
+
+This package uses the **combined server** architecture (`netbird-server` binary, `config.yaml` format) introduced in NetBird v0.65.0. This is the recommended approach for new deployments per the [upstream docs](https://docs.netbird.io/selfhosted/configuration-files).
+
+Key design decisions:
+
+1. **Embedded IdP (Dex)** handles initial authentication. The `/setup` page creates the first admin account. No external IdP is required for first-run.
+2. **Cloudron OIDC is optional** and added post-setup via the dashboard UI. This avoids the Catch-22 where you need to log in to configure the IdP you need to log in with.
+3. **config.yaml** (not `management.json`) is used for server configuration. The old `management.json` format is for the legacy multi-container architecture and does not enable the embedded IdP.
+4. **Dashboard static files** are served directly by our nginx. The upstream `netbirdio/dashboard` container has its own nginx that generates runtime config from env vars -- we replicate this by writing `OIDCConfigResponse` directly.
+
 ### What works well with Cloudron
 
 1. **PostgreSQL addon** -- NetBird supports PostgreSQL natively, Cloudron provides it as an addon
@@ -11,90 +22,81 @@
 3. **Single domain** -- All services multiplex on one domain via path-based routing
 4. **Docker-based** -- NetBird provides pre-built binaries and Docker images
 5. **Supervisord** -- Multi-process pattern (nginx + netbird-server) is well-supported by Cloudron
-6. **OIDC addon** -- Cloudron's built-in OIDC provider maps directly to NetBird's "Generic OIDC" connector
-7. **TURN addon** -- Cloudron provides a TURN server that NetBird can use for NAT traversal relay
 
 ### Cloudron addon integration
 
 | Addon | Purpose | Integration method |
 |-------|---------|-------------------|
-| `postgresql` | Database | `CLOUDRON_POSTGRESQL_*` env vars -> PostgreSQL DSN |
-| `localstorage` | Persistent data | `/app/data/` for config, encryption key, PAT |
-| `oidc` | Cloudron SSO | `CLOUDRON_OIDC_*` env vars -> NetBird identity provider API |
-| `turn` | NAT traversal relay | `CLOUDRON_TURN_*` env vars -> management.json TURN config |
+| `postgresql` | Database | `CLOUDRON_POSTGRESQL_*` env vars -> `server.store.dsn` in config.yaml |
+| `localstorage` | Persistent data | `/app/data/` for config, encryption key, auth secret |
 
-### OIDC integration details
+### Addons NOT used (and why)
 
-NetBird supports adding OIDC providers via its REST API (`POST /api/identity-providers`). The integration works as follows:
+| Addon | Why not |
+|-------|---------|
+| `oidc` | NetBird's embedded IdP handles initial auth. Cloudron OIDC can be added post-setup via the dashboard, but the manifest doesn't require it. Set `optionalSso: true` so users can choose. |
+| `turn` | NetBird's built-in relay handles NAT traversal. The combined server includes relay functionality. Cloudron's TURN addon uses a different auth model (shared secret) that doesn't map cleanly to NetBird's relay config. |
 
-1. Cloudron provides `CLOUDRON_OIDC_ISSUER`, `CLOUDRON_OIDC_CLIENT_ID`, `CLOUDRON_OIDC_CLIENT_SECRET`
-2. The manifest declares `loginRedirectUri: "/oauth2/callback/cloudron"` which Cloudron registers with its OIDC provider
-3. On startup, `start.sh` waits for the management API to become available
-4. If an admin PAT exists at `/app/data/config/.admin_pat`, it registers Cloudron as a Generic OIDC provider via the API
-5. If no PAT exists, it prints manual setup instructions to the logs
+### nginx routing (critical)
 
-**Key consideration**: The OIDC registration happens via the API (not config files) because NetBird manages identity providers as runtime state in the database. This means:
-- The registration survives restarts (stored in PostgreSQL)
-- The startup script checks for existing registration to avoid duplicates
-- The PAT is needed because the API requires authentication
+The internal nginx routes traffic from Cloudron's reverse proxy (port 8080) to the combined server (port 80). The routing must match the [upstream nginx configuration](https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-combined):
 
-### TURN integration details
+| Path | Protocol | nginx directive | Notes |
+|------|----------|----------------|-------|
+| `/signalexchange.SignalExchange/*` | gRPC | `grpc_pass` | HTTP/2 cleartext (h2c) |
+| `/management.ManagementService/*` | gRPC | `grpc_pass` | HTTP/2 cleartext (h2c) |
+| `/relay*`, `/ws-proxy/*` | WebSocket | `proxy_pass` + Upgrade | Long-lived connections |
+| `/api/*`, `/oauth2/*` | HTTP | `proxy_pass` | REST API + embedded IdP |
+| `/setup` | HTTP | `proxy_pass` | First-run onboarding |
+| `/*` | HTTP | static files | Dashboard catch-all |
 
-Cloudron's TURN addon provides `CLOUDRON_TURN_SERVER`, `CLOUDRON_TURN_PORT`, `CLOUDRON_TURN_TLS_PORT`, and `CLOUDRON_TURN_SECRET`. These map to NetBird's `TURNConfig` in `management.json`:
-
-- TURN is added as an additional relay alongside NetBird's built-in relay
-- Time-based credentials are used (standard TURN auth with shared secret)
-- The STUN port (UDP 3478) is still exposed for NAT type detection
+**Key gotchas**:
+- gRPC paths MUST use `grpc_pass`, not `proxy_pass`. nginx handles h2c natively with `grpc_pass`.
+- WebSocket paths need `proxy_http_version 1.1` and `Upgrade`/`Connection` headers.
+- Timeouts must be `1d` for long-lived gRPC and WebSocket connections.
+- The combined server listens on port 80 internally (not 8081 as in the old architecture).
 
 ### Challenges and solutions
 
 | Challenge | Solution | Risk |
 |-----------|----------|------|
-| **UDP 3478 (STUN)** | Use `tcpPorts` in manifest (supports UDP despite the name) | Low -- Cloudron handles port mapping |
-| **gRPC over HTTP/2** | nginx `grpc_pass` directive handles this | Low -- well-tested pattern |
-| **Combined server binary** | NetBird v0.29+ ships a single `netbird-server` binary | Low -- simplifies packaging |
-| **OIDC registration** | Post-start API call with PAT, fallback to manual instructions | Low -- graceful degradation |
-| **OIDC redirect URI** | Declared in manifest `loginRedirectUri`, matches NetBird's callback pattern | Low |
+| **UDP 3478 (STUN)** | Use `udpPorts` in manifest (NOT `tcpPorts` -- STUN is UDP) | Low -- Cloudron handles port mapping |
+| **gRPC over HTTP/2** | nginx `grpc_pass` directive with `grpc_socket_keepalive on` | Low -- well-tested pattern |
+| **Combined server binary** | NetBird v0.65+ ships a single `netbird-server` binary | Low -- simplifies packaging |
+| **Embedded IdP** | `config.yaml` with `server.auth.*` enables Dex automatically | Low -- upstream default |
+| **Dashboard config** | Write `OIDCConfigResponse` file that dashboard JS reads | Medium -- replicates dashboard container's nginx behavior |
 | **Let's Encrypt** | Not needed -- Cloudron handles TLS termination | None |
-| **WebSocket relay** | nginx `proxy_pass` with upgrade headers | Low |
 
 ### What needs testing
 
-1. **gRPC multiplexing** -- Management and Signal both use gRPC on the same port; nginx must route by service path
-2. **STUN UDP port** -- Verify Cloudron's `tcpPorts` correctly exposes UDP
-3. **OIDC login flow** -- Full end-to-end: Cloudron login page -> NetBird dashboard access
-4. **OIDC redirect URI** -- Verify `/oauth2/callback/cloudron` matches what NetBird generates
-5. **TURN relay** -- Verify peers behind strict NAT can connect via Cloudron's TURN server
-6. **Client compatibility** -- Ensure official NetBird clients can connect to a Cloudron-hosted management server
-7. **Backup/restore** -- Verify PostgreSQL + `/app/data/` backup captures all state (including OIDC config in DB)
-8. **Memory usage** -- Monitor actual usage; 512MB may need adjustment
+1. **Embedded IdP flow** -- `/setup` page creates admin, `/oauth2/token` issues tokens, dashboard login works
+2. **gRPC routing** -- Signal and Management gRPC connections through nginx `grpc_pass`
+3. **WebSocket routing** -- Relay and ws-proxy connections with proper Upgrade headers
+4. **STUN UDP port** -- Verify Cloudron's `udpPorts` correctly exposes UDP 3478
+5. **Client connectivity** -- NetBird clients can connect with setup key and management URL
+6. **Peer-to-peer mesh** -- Peers can communicate through WireGuard tunnels
+7. **NAT traversal** -- Peers behind NAT can connect via the built-in relay
+8. **Backup/restore** -- PostgreSQL + `/app/data/` backup captures all state
+9. **Memory usage** -- Monitor actual usage; 512MB may need adjustment
+10. **(Optional) Cloudron SSO** -- Adding Cloudron as external OIDC provider via dashboard
 
-### Development workflow
+### Lessons learned from v1.x
 
-```bash
-# Prerequisites
-npm install -g cloudron
-cloudron login my.cloudron.example
+The v1.x packaging had several critical issues identified by tester `timconsidine` on the [Cloudron forum](https://forum.cloudron.io/topic/7571/netbird-foss-noconf-mesh-vpn-using-wireguard-alternative-to-zerotier-tailscale-omniedge-netmaker-etc):
 
-# Build and test
-cloudron build
-cloudron install --location netbird
-
-# Iterate
-cloudron build && cloudron update --app netbird
-cloudron logs -f --app netbird
-
-# Debug
-cloudron exec --app netbird
-cloudron debug --app netbird
-```
+1. **Auth Catch-22**: Using `management.json` with `IdpManagerConfig.ManagerType: "none"` disabled the embedded IdP entirely. The `/oauth2/token` endpoint returned 401, making it impossible to log in.
+2. **Wrong config format**: `management.json` is the legacy multi-container format. The combined server uses `config.yaml`.
+3. **Wrong server flags**: `--management-config` is for the old management binary. The combined server uses `--config`.
+4. **STUN as TCP**: STUN uses UDP. Declaring it under `tcpPorts` wouldn't expose UDP traffic.
+5. **Missing dashboard config**: The dashboard JS needs `AUTH_AUDIENCE`, `AUTH_CLIENT_ID`, `AUTH_AUTHORITY`, etc. -- not just the API endpoint.
+6. **Missing WebSocket routes**: `/ws-proxy/` paths were not routed at all.
 
 ### Future enhancements
 
-1. **LDAP addon** -- Sync Cloudron users to NetBird groups
-2. **JWT group sync** -- Map Cloudron groups to NetBird access control groups automatically
-3. **Health check** -- Implement proper `/health` endpoint check instead of `/api/accounts`
-4. **Auto-PAT generation** -- Explore creating a PAT during first-run setup to avoid the manual step
+1. **Cloudron OIDC auto-configuration** -- Explore using the NetBird API to auto-register Cloudron as an IdP after first admin login
+2. **LDAP addon** -- Sync Cloudron users to NetBird groups
+3. **JWT group sync** -- Map Cloudron groups to NetBird access control groups automatically
+4. **Cloudron TURN integration** -- Investigate mapping Cloudron's TURN addon to NetBird's relay config
 
 ### Publishing to Cloudron App Store
 
@@ -108,11 +110,12 @@ Note: git.cloudron.io does not allow personal project creation (`can_create_proj
 
 ### References
 
-- NetBird self-hosting: https://docs.netbird.io/selfhosted/selfhosted-quickstart
-- NetBird OIDC guide: https://docs.netbird.io/selfhosted/identity-providers/generic-oidc
+- NetBird self-hosting quickstart: https://docs.netbird.io/selfhosted/selfhosted-quickstart
+- NetBird configuration files: https://docs.netbird.io/selfhosted/configuration-files
+- NetBird external reverse proxy: https://docs.netbird.io/selfhosted/external-reverse-proxy
 - NetBird identity providers: https://docs.netbird.io/selfhosted/identity-providers
-- Cloudron packaging: https://docs.cloudron.io/packaging/tutorial/
-- Cloudron manifest: https://docs.cloudron.io/packaging/manifest/
-- Cloudron addons (OIDC, TURN): https://docs.cloudron.io/packaging/addons/
-- Cloudron tcpPorts: https://docs.cloudron.io/packaging/manifest/#tcpports
-- Example Go app packages: https://git.cloudron.io/explore/projects/topics/go
+- Cloudron packaging tutorial: https://docs.cloudron.io/packaging/tutorial/
+- Cloudron manifest reference: https://docs.cloudron.io/packaging/manifest/
+- Cloudron addons (OIDC, TURN, etc.): https://docs.cloudron.io/packaging/addons/
+- Cloudron udpPorts: https://docs.cloudron.io/packaging/manifest/#udpports
+- Gitea Cloudron app (reference implementation): https://git.cloudron.io/packages/gitea-app
