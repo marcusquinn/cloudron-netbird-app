@@ -2,9 +2,9 @@
   "id": "io.netbird.cloudronapp",
   "title": "NetBird",
   "author": "Marcus Quinn <marcus@marcusquinn.com>",
-  "description": "Self-hosted WireGuard mesh VPN with SSO, MFA, and granular access controls. Connect devices into a secure peer-to-peer overlay network. Supports Cloudron SSO via OIDC.",
+  "description": "Self-hosted WireGuard mesh VPN with SSO, MFA, and granular access controls. Connect devices into a secure peer-to-peer overlay network.",
   "tagline": "Zero-config WireGuard mesh VPN for teams",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "upstreamVersion": "0.65.3",
   "healthCheckPath": "/api/accounts",
   "httpPort": 8080,
@@ -15,17 +15,12 @@
   "documentationUrl": "https://docs.netbird.io",
   "minBoxVersion": "7.6.0",
   "memoryLimit": 536870912,
+  "optionalSso": true,
   "addons": {
     "localstorage": {},
-    "postgresql": {},
-    "oidc": {
-      "loginRedirectUri": "/oauth2/callback/cloudron",
-      "logoutRedirectUri": "/",
-      "tokenSignatureAlgorithm": "RS256"
-    },
-    "turn": {}
+    "postgresql": {}
   },
-  "tcpPorts": {
+  "udpPorts": {
     "STUN_PORT": {
       "title": "STUN (NAT traversal)",
       "description": "UDP port for STUN NAT traversal. Must be accessible from all NetBird clients.",
@@ -38,8 +33,9 @@
     "wireguard",
     "mesh",
     "networking",
-    "security",
-    "sso"
+    "security"
   ],
-  "postInstallMessage": "NetBird management server is running. Visit the app URL to access the dashboard. Cloudron users can log in via SSO. UDP port ${STUN_PORT} must be accessible from your NetBird clients for NAT traversal."
+  "postInstallMessage": "NetBird is running. Visit the app URL to access the dashboard.\n\nOn first run, you will see the setup page where you can create your admin account.\n\nUDP port ${STUN_PORT} must be accessible from your NetBird clients for NAT traversal.\n\n<sso>Cloudron SSO can be added as an external identity provider via Settings > Identity Providers in the NetBird dashboard after initial setup.</sso>",
+  "configurePath": "/peers",
+  "changelog": "file://CHANGELOG.md"
 }
