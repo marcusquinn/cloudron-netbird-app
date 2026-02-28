@@ -19,3 +19,4 @@ Thumbs.db
 .vscode/
 .idea/
 .agents/loop-state/
+.aidevops.json
