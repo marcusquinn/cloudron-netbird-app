@@ -7,10 +7,9 @@ echo "==> Starting NetBird for Cloudron"
 # PHASE 1: First-Run Detection
 # ============================================
 if [[ ! -f /app/data/.initialized ]]; then
-    FIRST_RUN=true
-    echo "==> First run detected"
+    echo "==> First run detected — will initialize config and secrets"
 else
-    FIRST_RUN=false
+    echo "==> Existing installation detected"
 fi
 
 # ============================================
