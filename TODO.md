@@ -59,8 +59,11 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 ## In Progress
 
-<!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
+<!--TOON:in_progress[1]{id,desc,owner,tags,est,risk,logged,started,status}:
+t008,Add error handling for openssl encryption key generation,marcus,quality security,~15m,low,2026-03-01,2026-03-01,in_progress
 -->
+
+- [ ] t008 Add error handling for openssl encryption key generation @marcus #quality #security ~15m risk:low ref:GH#11 logged:2026-03-01 started:2026-03-01
 
 ## In Review
 
@@ -99,5 +102,5 @@ t007,Validate required CLOUDRON_* environment variables on startup,marcus,qualit
 <!--/TOON:subtasks-->
 
 <!--TOON:summary{total,ready,pending,in_progress,in_review,done,declined,total_est,total_actual}:
-4,0,0,0,0,4,0,~90m,~90m
+5,0,0,1,0,4,0,~105m,~90m
 -->
