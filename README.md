@@ -4,7 +4,7 @@
 
 ## What is NetBird?
 
-NetBird connects devices into a secure peer-to-peer WireGuard mesh network. Unlike Tailscale, the entire control plane is open-source and self-hostable.
+NetBird connects devices into a secure peer-to-peer WireGuard mesh network. The entire control plane is open-source and self-hostable.
 
 | Feature | Details |
 |---------|---------|
@@ -27,7 +27,7 @@ This Cloudron app packages the **NetBird combined server** (v0.65.3+), which inc
 - **Embedded IdP** -- built-in user management (Dex) with `/setup` onboarding page
 - **Dashboard** -- web UI for administration
 
-NetBird clients on your devices connect to this management server to join the mesh.
+NetBird clients connect to this server to join the mesh.
 
 ## Requirements
 
@@ -86,16 +86,18 @@ The `/setup` page is only accessible when no users exist. After creating the fir
 
 ## Adding Cloudron SSO (Optional)
 
-After initial setup, you can add Cloudron as an external identity provider so users can log in with their Cloudron credentials:
+After initial setup, you can add Cloudron as an external identity provider so users can log in with their Cloudron credentials.
 
-1. Install the app **with SSO enabled** (the OIDC addon provides `CLOUDRON_OIDC_*` environment variables)
+The manifest sets `optionalSso: true`, so Cloudron shows an "Enable SSO" toggle during installation. SSO must be enabled at install time (or via reconfigure) for the `CLOUDRON_OIDC_*` environment variables to be available.
+
+1. Ensure SSO is enabled for the app (Cloudron dashboard > App Settings > Enable SSO)
 2. Log into the NetBird dashboard with your admin account
 3. Go to **Settings > Identity Providers > Add Identity Provider**
 4. Select **Generic OIDC** and fill in:
    - **Name**: `Cloudron`
-   - **Issuer**: Check app logs for `CLOUDRON_OIDC_ISSUER` value
-   - **Client ID**: Check app logs for `CLOUDRON_OIDC_CLIENT_ID` value
-   - **Client Secret**: Available inside the container at `$CLOUDRON_OIDC_CLIENT_SECRET`
+   - **Issuer**: Run `cloudron exec --app netbird -- printenv CLOUDRON_OIDC_ISSUER`
+   - **Client ID**: Run `cloudron exec --app netbird -- printenv CLOUDRON_OIDC_CLIENT_ID`
+   - **Client Secret**: Run `cloudron exec --app netbird -- printenv CLOUDRON_OIDC_CLIENT_SECRET`
 5. Save -- the login page will now show a "Cloudron" button alongside local email/password
 
 **Notes**:
@@ -133,6 +135,8 @@ Cloudron Server
 
 ## Configuration
 
+All configuration is generated at runtime by `start.sh`. There are no config files to edit manually -- the app reads Cloudron environment variables and writes `config.yaml`, `nginx.conf`, and dashboard config files on each start.
+
 ### Database
 
 Uses Cloudron's PostgreSQL addon automatically. No manual database setup required.
@@ -141,21 +145,27 @@ Uses Cloudron's PostgreSQL addon automatically. No manual database setup require
 
 **Built-in**: NetBird's embedded IdP (Dex) handles initial setup and local user management. The `/setup` page creates the first admin account.
 
-**Optional**: Cloudron SSO or any OIDC provider can be added via the dashboard after initial setup. Multiple providers can coexist.
+**Optional**: Cloudron SSO or any OIDC provider can be added via the dashboard after initial setup. Multiple providers can coexist. See [Adding Cloudron SSO](#adding-cloudron-sso-optional).
+
+### Health Check
+
+The manifest uses `/api/accounts` as the health check endpoint. This is served by the management API through the internal nginx proxy. The combined server also exposes a health endpoint on port 9000, but that port is not routed through nginx.
 
 ### Persistent Data
 
-All persistent data is stored in `/app/data/` and included in Cloudron backups:
+All persistent data is stored in `/app/data/` (Cloudron's `localstorage` addon) and included in Cloudron backups:
 
 | Path | Contents |
 |------|----------|
-| `/app/data/config/config.yaml` | Combined server configuration |
-| `/app/data/config/.encryption_key` | Database encryption key (generated on first run) |
-| `/app/data/config/.auth_secret` | Relay authentication secret (generated on first run) |
+| `/app/data/config/config.yaml` | Combined server configuration (regenerated on each start) |
+| `/app/data/config/nginx.conf` | Internal nginx configuration (regenerated on each start) |
+| `/app/data/config/.encryption_key` | Database encryption key (generated on first run, persisted) |
+| `/app/data/config/.auth_secret` | Relay authentication secret (generated on first run, persisted) |
 | `/app/data/netbird/` | Server state and data |
-| `/app/data/dashboard/` | Dashboard environment config |
+| `/app/data/dashboard/` | Dashboard OIDC config (`config.json`, `.env`) |
+| `/app/data/.initialized` | First-run marker file |
 
-The encryption key encrypts setup keys and API tokens at rest. It is included in Cloudron backups. **Do not lose it** -- losing this key means regenerating all setup keys and API tokens.
+The encryption key encrypts setup keys and API tokens at rest in PostgreSQL. Both `.encryption_key` and `.auth_secret` are included in Cloudron backups. **Do not lose them** -- losing the encryption key means regenerating all setup keys and API tokens.
 
 ## Development
 
@@ -204,28 +214,23 @@ cloudron uninstall --app netbird
 ```text
 cloudron-netbird-app/
   CloudronManifest.json    # Cloudron app metadata and addon requirements
-  Dockerfile               # Build instructions
+  Dockerfile               # Build instructions (downloads netbird-server + dashboard)
   start.sh                 # Runtime entry point (config generation, process launch)
-  supervisord.conf         # Multi-process management (nginx + netbird-server)
+  supervisord.conf         # Process management (nginx + netbird-server)
   logo.png                 # App icon (256x256)
-  PACKAGING-NOTES.md       # Detailed feasibility assessment and notes
+  PACKAGING-NOTES.md       # Architecture decisions, lessons learned, testing plan
   CHANGELOG.md             # Version history
+  CONTRIBUTING.md          # Contribution guidelines
   LICENSE                  # MIT
+  .editorconfig            # Editor formatting rules
 ```
-
-## Reverse Proxy Feature
-
-NetBird v0.65+ includes a [Reverse Proxy](https://docs.netbird.io/manage/reverse-proxy) feature that can expose internal services on mesh peers to the public internet with automatic TLS.
-
-**This feature is NOT compatible with this Cloudron package.** It requires Traefik with TLS passthrough. Cloudron's nginx terminates TLS before traffic reaches the app, so TLS passthrough is not possible. See the [TLS passthrough feature request](https://forum.cloudron.io/topic/15109/tls-passthrough-option-for-apps-requiring-end-to-end-tls) on the Cloudron forum.
-
-**What still works**: All core mesh VPN functionality -- peer-to-peer WireGuard tunnels, NAT traversal, access control, DNS, network routes, setup keys, and the management dashboard.
 
 ## Known Limitations
 
-1. **STUN port**: UDP 3478 must be directly accessible -- it cannot go through Cloudron's HTTP reverse proxy.
-2. **Reverse proxy not supported**: NetBird's reverse proxy feature requires Traefik with TLS passthrough, which is incompatible with Cloudron's nginx.
-3. **Single account mode**: All users join the same network by default. This is appropriate for most self-hosted deployments.
+1. **STUN port**: UDP 3478 must be directly accessible -- it cannot go through Cloudron's HTTP reverse proxy. Ensure your firewall allows inbound UDP 3478.
+2. **Reverse proxy feature not supported**: NetBird's [Reverse Proxy](https://docs.netbird.io/manage/reverse-proxy) feature requires Traefik with TLS passthrough, which is incompatible with Cloudron's nginx TLS termination. See the [TLS passthrough feature request](https://forum.cloudron.io/topic/15109/tls-passthrough-option-for-apps-requiring-end-to-end-tls) on the Cloudron forum. All core mesh VPN functionality (P2P tunnels, NAT traversal, access control, DNS, routes, dashboard) works normally.
+3. **Single account mode**: All users join the same network. This is appropriate for most self-hosted deployments.
+4. **Not yet tested on a real Cloudron instance**: This package needs real-world validation. See [Contributing](#contributing).
 
 ## Upstream
 
