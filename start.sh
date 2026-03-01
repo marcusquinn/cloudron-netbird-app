@@ -4,6 +4,43 @@ set -eu
 echo "==> Starting NetBird for Cloudron"
 
 # ============================================
+# PHASE 0: Validate Required Environment Variables
+# ============================================
+# Cloudron injects these via addons (postgresql) and platform env.
+# If addon injection fails, the app would start with broken/empty config
+# silently. Fail fast with a clear error instead.
+
+validate_env() {
+    local required_vars=(
+        "CLOUDRON_APP_DOMAIN"
+        "CLOUDRON_POSTGRESQL_HOST"
+        "CLOUDRON_POSTGRESQL_USERNAME"
+        "CLOUDRON_POSTGRESQL_PASSWORD"
+        "CLOUDRON_POSTGRESQL_DATABASE"
+        "CLOUDRON_POSTGRESQL_PORT"
+    )
+    local missing=0
+    local var
+
+    for var in "${required_vars[@]}"; do
+        if [[ -z "${!var:-}" ]]; then
+            echo "ERROR: Required environment variable ${var} is not set" >&2
+            missing=$((missing + 1))
+        fi
+    done
+
+    if [[ ${missing} -gt 0 ]]; then
+        echo "ERROR: ${missing} required environment variable(s) missing — cannot start" >&2
+        return 1
+    fi
+
+    echo "==> Environment validated (${#required_vars[@]} required variables present)"
+    return 0
+}
+
+validate_env
+
+# ============================================
 # PHASE 1: First-Run Detection
 # ============================================
 if [[ ! -f /app/data/.initialized ]]; then
