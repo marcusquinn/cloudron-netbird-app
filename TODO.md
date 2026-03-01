@@ -49,8 +49,11 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 <!-- Tasks with no open blockers - run /ready to refresh -->
 
-<!--TOON:ready[0]{id,desc,owner,tags,est,risk,logged,status}:
+<!--TOON:ready[1]{id,desc,owner,tags,est,risk,logged,status}:
+t005,Fix unused FIRST_RUN variable (ShellCheck SC2034),marcus,quality shellcheck,~15m,risk:low,2026-03-01,ready
 -->
+
+- [ ] t005 Fix unused FIRST_RUN variable (ShellCheck SC2034) @marcus #quality #shellcheck ~15m risk:low ref:GH#6 logged:2026-03-01
 
 ## Backlog
 
