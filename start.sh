@@ -64,14 +64,20 @@ mkdir -p /run/netbird
 
 # Encryption key for database-at-rest encryption
 if [[ ! -f /app/data/config/.encryption_key ]]; then
-    openssl rand -hex 16 >/app/data/config/.encryption_key
+    if ! openssl rand -hex 16 >/app/data/config/.encryption_key; then
+        echo "ERROR: Failed to generate encryption key" >&2
+        exit 1
+    fi
     chmod 600 /app/data/config/.encryption_key
 fi
 ENCRYPTION_KEY=$(cat /app/data/config/.encryption_key)
 
 # Auth secret for relay credential validation
 if [[ ! -f /app/data/config/.auth_secret ]]; then
-    openssl rand -hex 32 >/app/data/config/.auth_secret
+    if ! openssl rand -hex 32 >/app/data/config/.auth_secret; then
+        echo "ERROR: Failed to generate auth secret" >&2
+        exit 1
+    fi
     chmod 600 /app/data/config/.auth_secret
 fi
 AUTH_SECRET=$(cat /app/data/config/.auth_secret)
