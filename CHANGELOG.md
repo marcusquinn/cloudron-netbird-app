@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Added nginx security headers: `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`, `Referrer-Policy` to all responses.
+- nginx now runs as non-root user (`cloudron`) via supervisord, matching the netbird-server process.
+- Added explicit `scgi_temp_path` and `uwsgi_temp_path` directives to ensure all nginx temp paths are in the writable `/run/nginx/` directory.
+
 ## [2.0.0] - 2026-02-26
 
 ### Breaking Changes
