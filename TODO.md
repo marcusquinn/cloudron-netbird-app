@@ -72,8 +72,11 @@ t006,Add nginx security headers and run nginx as non-root,marcus,security,~30m,r
 
 <!-- Tasks with open PRs awaiting merge -->
 
-<!--TOON:in_review[0]{id,desc,owner,tags,est,pr_url,started,pr_created,status}:
+<!--TOON:in_review[1]{id,desc,owner,tags,est,pr_url,started,pr_created,status}:
+t007,Validate required CLOUDRON_* environment variables on startup,marcus,quality,~15m,pr:#9,2026-03-01,2026-03-01,in_review
 -->
+
+- [ ] t007 Validate required CLOUDRON_* environment variables on startup @marcus #quality ~15m risk:low ref:GH#7 logged:2026-03-01 started:2026-03-01 pr:#9
 
 ## Done
 
@@ -99,5 +102,5 @@ t004,Audit README.md — ensure version references current and install instructi
 <!--/TOON:subtasks-->
 
 <!--TOON:summary{total,ready,pending,in_progress,in_review,done,declined,total_est,total_actual}:
-0,0,0,0,0,0,0,,
+4,1,0,1,1,1,0,,
 -->
