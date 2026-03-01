@@ -19,7 +19,7 @@ fi
 mkdir -p /app/data/config
 mkdir -p /app/data/netbird
 mkdir -p /app/data/dashboard
-mkdir -p /run/nginx/client_body /run/nginx/proxy /run/nginx/fastcgi
+mkdir -p /run/nginx/client_body /run/nginx/proxy /run/nginx/fastcgi /run/nginx/scgi /run/nginx/uwsgi
 mkdir -p /run/netbird
 
 # ============================================
@@ -191,6 +191,8 @@ http {
     client_body_temp_path /run/nginx/client_body;
     proxy_temp_path /run/nginx/proxy;
     fastcgi_temp_path /run/nginx/fastcgi;
+    scgi_temp_path /run/nginx/scgi;
+    uwsgi_temp_path /run/nginx/uwsgi;
 
     # Required for long-lived gRPC and WebSocket connections
     client_header_timeout 1d;
@@ -208,6 +210,12 @@ http {
     server {
         listen 8080 http2;
         server_name _;
+
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
         # Common proxy headers
         proxy_set_header X-Real-IP $remote_addr;
