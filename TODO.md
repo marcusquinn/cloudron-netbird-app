@@ -58,7 +58,7 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 t004,Audit README.md — ensure version references current and install instructions accurate and configuration options complete and screenshots/examples up to date,marcus,docs audit,~30m,,2026-03-01,pending
 -->
 
-- [ ] t004 Audit README.md — ensure version references are current, install instructions accurate, configuration options complete, screenshots/examples up to date. #docs #audit #auto-dispatch ~30m model:sonnet logged:2026-03-01
+- [ ] t004 Audit README.md — ensure version references are current, install instructions accurate, configuration options complete, screenshots/examples up to date. #docs #audit #auto-dispatch ~30m model:sonnet ref:GH#3 logged:2026-03-01
 
 ## In Progress
 
