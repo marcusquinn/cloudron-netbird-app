@@ -62,8 +62,11 @@ t005,Fix unused FIRST_RUN variable (ShellCheck SC2034),marcus,quality shellcheck
 
 ## In Progress
 
-<!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
+<!--TOON:in_progress[1]{id,desc,owner,tags,est,risk,logged,started,status}:
+t006,Add nginx security headers and run nginx as non-root,marcus,security,~30m,risk:low,2026-03-01,2026-03-01,in_progress
 -->
+
+- [ ] t006 Add nginx security headers and run nginx as non-root @marcus #security ~30m risk:low ref:GH#5 logged:2026-03-01 started:2026-03-01
 
 ## In Review
 
