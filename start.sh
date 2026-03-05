@@ -62,24 +62,31 @@ mkdir -p /run/netbird
 # PHASE 3: Generate or Preserve Secrets
 # ============================================
 
-# Encryption key for database-at-rest encryption
-if [[ ! -f /app/data/config/.encryption_key ]]; then
-    if ! openssl rand -hex 16 >/app/data/config/.encryption_key; then
-        echo "ERROR: Failed to generate encryption key" >&2
+# Generate a hex secret file if it doesn't already exist.
+# On openssl failure, removes any partial/empty file to prevent the app
+# from starting with a blank secret on the next attempt (PR #12 review).
+generate_secret() {
+    local file_path="$1"
+    local key_length="$2"
+    local key_name="$3"
+
+    if [[ -f "${file_path}" ]]; then
+        return 0
+    fi
+
+    if ! openssl rand -hex "${key_length}" >"${file_path}"; then
+        echo "ERROR: Failed to generate ${key_name}" >&2
+        rm -f "${file_path}"
         exit 1
     fi
-    chmod 600 /app/data/config/.encryption_key
-fi
+    chmod 600 "${file_path}"
+    return 0
+}
+
+generate_secret "/app/data/config/.encryption_key" 16 "encryption key"
 ENCRYPTION_KEY=$(cat /app/data/config/.encryption_key)
 
-# Auth secret for relay credential validation
-if [[ ! -f /app/data/config/.auth_secret ]]; then
-    if ! openssl rand -hex 32 >/app/data/config/.auth_secret; then
-        echo "ERROR: Failed to generate auth secret" >&2
-        exit 1
-    fi
-    chmod 600 /app/data/config/.auth_secret
-fi
+generate_secret "/app/data/config/.auth_secret" 32 "auth secret"
 AUTH_SECRET=$(cat /app/data/config/.auth_secret)
 
 # ============================================
