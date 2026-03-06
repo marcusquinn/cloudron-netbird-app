@@ -59,8 +59,11 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 ## In Progress
 
-<!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
+<!--TOON:in_progress[1]{id,desc,owner,tags,est,risk,logged,started,status}:
+t009,Fix quality-debt in start.sh from PR #9 review feedback,marcus,quality-debt,~15m,low,2026-03-06,2026-03-06,in_progress
 -->
+
+- [ ] t009 Fix quality-debt in start.sh from PR #9 review feedback @marcus #quality-debt ~15m risk:low ref:GH#14 logged:2026-03-06 started:2026-03-06
 
 ## In Review
 
@@ -101,5 +104,5 @@ t008,Add error handling for openssl encryption key generation,marcus,quality sec
 <!--/TOON:subtasks-->
 
 <!--TOON:summary{total,ready,pending,in_progress,in_review,done,declined,total_est,total_actual}:
-5,0,0,0,0,5,0,~105m,~105m
+6,0,0,1,0,5,0,~120m,~105m
 -->
