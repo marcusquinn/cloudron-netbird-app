@@ -62,7 +62,9 @@ mkdir -p /run/netbird
 # PHASE 3: Generate or Preserve Secrets
 # ============================================
 
-# Generate a hex secret file if it doesn't already exist.
+# Generate a hex secret file if it doesn't already exist and is non-empty.
+# Uses -s (exists AND non-empty) instead of -f (exists only) to handle the
+# case where a previous failed run left an empty file (PR #18 review).
 # On openssl failure, removes any partial/empty file to prevent the app
 # from starting with a blank secret on the next attempt (PR #12 review).
 generate_secret() {
@@ -70,7 +72,7 @@ generate_secret() {
     local key_length="$2"
     local key_name="$3"
 
-    if [[ -f "${file_path}" ]]; then
+    if [[ -s "${file_path}" ]]; then
         return 0
     fi
 
