@@ -165,7 +165,7 @@ All persistent data is stored in `/app/data/` (Cloudron's `localstorage` addon) 
 | `/app/data/dashboard/` | Dashboard OIDC config (`config.json`, `.env`) |
 | `/app/data/.initialized` | First-run marker file |
 
-The encryption key encrypts setup keys and API tokens at rest in PostgreSQL. Both `.encryption_key` and `.auth_secret` are included in Cloudron backups. **Do not lose them** -- losing the encryption key means regenerating all setup keys and API tokens.
+The encryption key encrypts setup keys and API tokens at rest in PostgreSQL. Both `.encryption_key` and `.auth_secret` are included in Cloudron backups. **Do not lose them** -- losing the encryption key means regenerating all setup keys and API tokens, while losing the auth secret may disrupt relay server authentication.
 
 ## Development
 
