@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Added nginx security headers: `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`, `Referrer-Policy` to all responses.
+- Changed `X-XSS-Protection` from `1; mode=block` to `0` — the XSS auditor is deprecated and can introduce vulnerabilities in older browsers (PR #10 review).
+- Added `Permissions-Policy: interest-cohort=()` header to disable FLoC tracking (PR #10 review).
 - nginx now runs as non-root user (`cloudron`) via supervisord, matching the netbird-server process.
 - Added explicit `scgi_temp_path` and `uwsgi_temp_path` directives to ensure all nginx temp paths are in the writable `/run/nginx/` directory.
 
