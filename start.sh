@@ -19,18 +19,25 @@ validate_env() {
         "CLOUDRON_POSTGRESQL_DATABASE"
         "CLOUDRON_POSTGRESQL_PORT"
     )
-    local missing=0
+    local missing_vars=()
     local var
 
     for var in "${required_vars[@]}"; do
         if [[ -z "${!var:-}" ]]; then
-            echo "ERROR: Required environment variable ${var} is not set" >&2
-            missing=$((missing + 1))
+            missing_vars+=("${var}")
         fi
     done
 
-    if [[ ${missing} -gt 0 ]]; then
-        echo "ERROR: ${missing} required environment variable(s) missing — cannot start" >&2
+    if [[ ${#missing_vars[@]} -gt 0 ]]; then
+        echo "ERROR: ${#missing_vars[@]} required environment variable(s) missing — cannot start:" >&2
+        printf " - %s\n" "${missing_vars[@]}" >&2
+        return 1
+    fi
+
+    # Validate CLOUDRON_POSTGRESQL_PORT is a valid port number (1-65535)
+    if ! [[ "${CLOUDRON_POSTGRESQL_PORT}" =~ ^[0-9]+$ ]] ||
+        ((CLOUDRON_POSTGRESQL_PORT < 1 || CLOUDRON_POSTGRESQL_PORT > 65535)); then
+        echo "ERROR: CLOUDRON_POSTGRESQL_PORT must be an integer between 1 and 65535 (got: '${CLOUDRON_POSTGRESQL_PORT}')" >&2
         return 1
     fi
 
@@ -38,7 +45,7 @@ validate_env() {
     return 0
 }
 
-validate_env
+validate_env || exit 1
 
 # ============================================
 # PHASE 1: First-Run Detection
