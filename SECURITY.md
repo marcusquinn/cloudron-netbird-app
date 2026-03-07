@@ -2,10 +2,10 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| 2.x     | Yes       |
-| < 2.0   | No        |
+| App Version | Upstream NetBird | Supported |
+|-------------|------------------|-----------:|
+| 2.0.0       | 0.65.3           | Yes        |
+| < 2.0.0     | N/A              | No         |
 
 ## Reporting a Vulnerability
 
@@ -49,3 +49,6 @@ This package implements the following security measures:
 - **nginx hardening**: Security headers (X-Frame-Options,
   X-Content-Type-Options, etc.) are set in the nginx config
 - **Non-root nginx**: nginx worker processes run as the `cloudron` user
+- **PostgreSQL connection encryption**: Database connections use
+  `sslmode=prefer` (opportunistic TLS), encrypting the connection when the
+  server supports it
