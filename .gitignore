@@ -12,6 +12,13 @@
 .DS_Store
 Thumbs.db
 
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+
 # Editor
 *.swp
 *.swo
