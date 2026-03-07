@@ -26,3 +26,13 @@ Create `.md` files in this directory for domain-specific context:
 ```
 
 Each file is read on demand by AI assistants when relevant to the task.
+
+## Security
+
+This is a Cloudron app packaging project for NetBird. No AI/LLM dependencies. Security considerations are container-focused:
+
+- **Dockerfile**: Follow least-privilege principles, pin base image versions, avoid running as root
+- **Network**: NetBird is a networking tool — ensure no credentials are baked into images
+- **Cloudron addons**: Use Cloudron's addon system for secrets, not environment variables in manifests
+
+For framework-level security guidance, see the [aidevops framework docs](https://github.com/marcusquinn/aidevops) `tools/security/prompt-injection-defender.md`.
