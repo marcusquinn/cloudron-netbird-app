@@ -117,7 +117,12 @@ NETBIRD_DOMAIN="${CLOUDRON_APP_DOMAIN}"
 # and the /setup page for first-run onboarding.
 
 # Build store DSN for PostgreSQL
-PG_DSN="host=${CLOUDRON_POSTGRESQL_HOST} user=${CLOUDRON_POSTGRESQL_USERNAME} password=${CLOUDRON_POSTGRESQL_PASSWORD} dbname=${CLOUDRON_POSTGRESQL_DATABASE} port=${CLOUDRON_POSTGRESQL_PORT} sslmode=disable"
+# Use sslmode=prefer (opportunistic TLS): encrypts the connection if the server
+# supports it, falls back to unencrypted if not. Cloudron's PostgreSQL addon docs
+# don't document SSL support or export a CA certificate path, so verify-full would
+# break if no cert is available. prefer is the safe upgrade from disable — it will
+# use encryption when possible without requiring a trusted CA cert on the client.
+PG_DSN="host=${CLOUDRON_POSTGRESQL_HOST} user=${CLOUDRON_POSTGRESQL_USERNAME} password=${CLOUDRON_POSTGRESQL_PASSWORD} dbname=${CLOUDRON_POSTGRESQL_DATABASE} port=${CLOUDRON_POSTGRESQL_PORT} sslmode=prefer"
 
 cat >/app/data/config/config.yaml <<CONFIG_EOF
 server:
@@ -149,7 +154,7 @@ server:
 CONFIG_EOF
 
 # Also export DSN as env var (the server checks both config.yaml and env)
-export NETBIRD_STORE_ENGINE_POSTGRES_DSN="postgres://${CLOUDRON_POSTGRESQL_USERNAME}:${CLOUDRON_POSTGRESQL_PASSWORD}@${CLOUDRON_POSTGRESQL_HOST}:${CLOUDRON_POSTGRESQL_PORT}/${CLOUDRON_POSTGRESQL_DATABASE}?sslmode=disable"
+export NETBIRD_STORE_ENGINE_POSTGRES_DSN="postgres://${CLOUDRON_POSTGRESQL_USERNAME}:${CLOUDRON_POSTGRESQL_PASSWORD}@${CLOUDRON_POSTGRESQL_HOST}:${CLOUDRON_POSTGRESQL_PORT}/${CLOUDRON_POSTGRESQL_DATABASE}?sslmode=prefer"
 
 # ============================================
 # PHASE 4b: Dashboard Environment
