@@ -60,10 +60,10 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 ## In Progress
 
 <!--TOON:in_progress[1]{id,desc,owner,tags,est,risk,logged,started,status}:
-t009,Fix quality-debt in start.sh from PR #9 review feedback,marcus,quality-debt,~15m,low,2026-03-06,2026-03-06,in_progress
+t010,Consolidate validate_env error reporting — PR #23 review feedback,marcus,quality-debt,~15m,low,2026-03-07,2026-03-07,in_progress
 -->
 
-- [ ] t009 Fix quality-debt in start.sh from PR #9 review feedback @marcus #quality-debt ~15m risk:low ref:GH#14 logged:2026-03-06 started:2026-03-06
+- [ ] t010 Consolidate validate_env error reporting — PR #23 review feedback @marcus #quality-debt ~15m risk:low ref:GH#25 logged:2026-03-07 started:2026-03-07
 
 ## In Review
 
@@ -74,12 +74,13 @@ t009,Fix quality-debt in start.sh from PR #9 review feedback,marcus,quality-debt
 
 ## Done
 
-<!--TOON:done[5]{id,desc,owner,tags,est,actual,logged,started,completed,status}:
+<!--TOON:done[6]{id,desc,owner,tags,est,actual,logged,started,completed,status}:
 t004,Audit README.md — ensure version references current and install instructions accurate and configuration options complete and screenshots/examples up to date,marcus,docs audit,~30m,~30m,2026-03-01,,2026-03-01,done
 t005,Fix unused FIRST_RUN variable (ShellCheck SC2034),marcus,quality shellcheck,~15m,~15m,2026-03-01,,2026-03-01,done
 t006,Add nginx security headers and run nginx as non-root,marcus,security,~30m,~30m,2026-03-01,2026-03-01,2026-03-01,done
 t007,Validate required CLOUDRON_* environment variables on startup,marcus,quality,~15m,~15m,2026-03-01,2026-03-01,2026-03-01,done
 t008,Add error handling for openssl encryption key generation,marcus,quality security,~15m,~15m,2026-03-01,2026-03-01,2026-03-01,done
+t009,Fix quality-debt in start.sh from PR #9 review feedback,marcus,quality-debt,~15m,~15m,2026-03-06,2026-03-06,2026-03-07,done
 -->
 
 - [x] t004 Audit README.md — ensure version references are current, install instructions accurate, configuration options complete, screenshots/examples up to date. #docs #audit ref:GH#3 logged:2026-03-01 completed:2026-03-01 pr:#4
@@ -87,6 +88,7 @@ t008,Add error handling for openssl encryption key generation,marcus,quality sec
 - [x] t006 Add nginx security headers and run nginx as non-root @marcus #security ~30m risk:low ref:GH#5 logged:2026-03-01 started:2026-03-01 completed:2026-03-01 pr:#10
 - [x] t007 Validate required CLOUDRON_* environment variables on startup @marcus #quality ~15m risk:low ref:GH#7 logged:2026-03-01 started:2026-03-01 completed:2026-03-01 pr:#9
 - [x] t008 Add error handling for openssl encryption key generation @marcus #quality #security ~15m risk:low ref:GH#11 logged:2026-03-01 started:2026-03-01 completed:2026-03-01
+- [x] t009 Fix quality-debt in start.sh from PR #9 review feedback @marcus #quality-debt ~15m risk:low ref:GH#14 logged:2026-03-06 started:2026-03-06 completed:2026-03-07 pr:#23
 
 ## Declined
 
@@ -104,5 +106,5 @@ t008,Add error handling for openssl encryption key generation,marcus,quality sec
 <!--/TOON:subtasks-->
 
 <!--TOON:summary{total,ready,pending,in_progress,in_review,done,declined,total_est,total_actual}:
-6,0,0,1,0,5,0,~120m,~105m
+7,0,0,1,0,6,0,~135m,~120m
 -->
