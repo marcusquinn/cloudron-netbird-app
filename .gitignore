@@ -17,6 +17,9 @@ Thumbs.db
 .env.*
 *.pem
 *.key
+*.ppk
+*.p12
+*.pfx
 credentials.json
 
 # Editor
