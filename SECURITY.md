@@ -51,4 +51,10 @@ This package implements the following security measures:
 - **Non-root nginx**: nginx worker processes run as the `cloudron` user
 - **PostgreSQL connection encryption**: Database connections use
   `sslmode=prefer` (opportunistic TLS), encrypting the connection when the
-  server supports it
+  server supports it. The Cloudron PostgreSQL addon runs on the same host
+  within Cloudron's internal Docker network and does not export CA
+  certificates or SSL-related environment variables
+  ([Cloudron addon docs](https://docs.cloudron.io/packaging/addons/#postgresql)),
+  so `verify-full` is not feasible. `prefer` is the safe upgrade from
+  `disable` — it uses encryption when available without requiring a trusted
+  CA cert on the client.

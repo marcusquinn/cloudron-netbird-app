@@ -122,6 +122,7 @@ NETBIRD_DOMAIN="${CLOUDRON_APP_DOMAIN}"
 # don't document SSL support or export a CA certificate path, so verify-full would
 # break if no cert is available. prefer is the safe upgrade from disable — it will
 # use encryption when possible without requiring a trusted CA cert on the client.
+# See: https://docs.cloudron.io/packaging/addons/#postgresql
 PG_DSN="host=${CLOUDRON_POSTGRESQL_HOST} user=${CLOUDRON_POSTGRESQL_USERNAME} password=${CLOUDRON_POSTGRESQL_PASSWORD} dbname=${CLOUDRON_POSTGRESQL_DATABASE} port=${CLOUDRON_POSTGRESQL_PORT} sslmode=prefer"
 
 cat >/app/data/config/config.yaml <<CONFIG_EOF
