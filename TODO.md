@@ -59,11 +59,8 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 ## In Progress
 
-<!--TOON:in_progress[1]{id,desc,owner,tags,est,risk,logged,started,status}:
-t011,Fix quality-debt in SECURITY.md from PR #28 review feedback,marcus,quality-debt security,~20m,low,2026-03-07,2026-03-07,in_progress
+<!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
 -->
-
-- [ ] t011 Fix quality-debt in SECURITY.md from PR #28 review feedback @marcus #quality-debt #security ~20m risk:low ref:GH#31 logged:2026-03-07 started:2026-03-07
 
 ## In Review
 
@@ -82,6 +79,7 @@ t007,Validate required CLOUDRON_* environment variables on startup,marcus,qualit
 t008,Add error handling for openssl encryption key generation,marcus,quality security,~15m,~15m,2026-03-01,2026-03-01,2026-03-01,done
 t009,Fix quality-debt in start.sh from PR #9 review feedback,marcus,quality-debt,~15m,~15m,2026-03-06,2026-03-06,2026-03-07,done
 t010,Consolidate validate_env error reporting — PR #23 review feedback,marcus,quality-debt,~15m,~15m,2026-03-07,2026-03-07,2026-03-07,done
+t011,Fix quality-debt in SECURITY.md from PR #28 review feedback,marcus,quality-debt security,~20m,~20m,2026-03-07,2026-03-07,2026-03-07,done
 -->
 
 - [x] t004 Audit README.md — ensure version references are current, install instructions accurate, configuration options complete, screenshots/examples up to date. #docs #audit ref:GH#3 logged:2026-03-01 completed:2026-03-01 pr:#4
@@ -91,6 +89,7 @@ t010,Consolidate validate_env error reporting — PR #23 review feedback,marcus,
 - [x] t008 Add error handling for openssl encryption key generation @marcus #quality #security ~15m risk:low ref:GH#11 logged:2026-03-01 started:2026-03-01 completed:2026-03-01
 - [x] t009 Fix quality-debt in start.sh from PR #9 review feedback @marcus #quality-debt ~15m risk:low ref:GH#14 logged:2026-03-06 started:2026-03-06 completed:2026-03-07 pr:#23
 - [x] t010 Consolidate validate_env error reporting — PR #23 review feedback @marcus #quality-debt ~15m risk:low ref:GH#25 logged:2026-03-07 started:2026-03-07 completed:2026-03-07 pr:#26
+- [x] t011 Fix quality-debt in SECURITY.md from PR #28 review feedback @marcus #quality-debt #security ~20m risk:low ref:GH#31 logged:2026-03-07 started:2026-03-07 completed:2026-03-07 pr:#33
 
 ## Declined
 
