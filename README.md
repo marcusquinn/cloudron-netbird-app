@@ -18,7 +18,7 @@ NetBird connects devices into a secure peer-to-peer WireGuard mesh network. The 
 
 ## What this package provides
 
-This Cloudron app packages the **NetBird combined server** (v0.65.3+), which includes:
+This Cloudron app packages the **NetBird combined server** (v0.74.7+), which includes:
 
 - **Management API** -- peer registry, ACLs, setup keys, network routes
 - **Signal server** -- WebRTC ICE negotiation for P2P connection setup
@@ -224,7 +224,7 @@ update.
 ```text
 cloudron-netbird-app/
   CloudronManifest.json    # Cloudron app metadata and addon requirements
-  Dockerfile               # Build instructions (downloads netbird-server + dashboard)
+  Dockerfile               # Build instructions (copies netbird-server + dashboard)
   start.sh                 # Runtime entry point (config generation, process launch)
   supervisord.conf         # Process management (nginx + netbird-server)
   logo.png                 # App icon (256x256)

@@ -7,15 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-07-22
+
 ### Added
 
 - Managed tag-triggered Cloudron package release validation.
 
 ### Changed
 
-- Pinned the final Cloudron base image and dashboard `v2.32.4` image digest.
-- Replaced the moving dashboard `latest` release download with a deterministic
-  multi-stage image copy while preserving NetBird server `v0.65.3`.
+- Updated the combined NetBird server from `v0.65.3` to `v0.74.7`.
+- Updated the dashboard from `v2.32.4` to `v2.90.4`.
+- Pinned the final Cloudron base image and upstream server and dashboard image
+  digests.
+- Replaced moving or unavailable release downloads with deterministic
+  multi-stage image copies.
 
 ### Security
 
