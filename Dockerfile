@@ -1,4 +1,5 @@
-FROM cloudron/base:5.0.0
+FROM netbirdio/dashboard:v2.32.4@sha256:10afad121e564f0288cae8fc966dc50d00a92fb067b6f5af642ffa2a91e27ccb AS dashboard
+FROM cloudron/base:5.0.0@sha256:04fd70dbd8ad6149c19de39e35718e024417c3e01dc9c6637eaf4a41ec4e596c
 
 # NetBird upstream version
 ARG NETBIRD_VERSION=0.65.3
@@ -18,10 +19,8 @@ RUN mkdir -p /app/code/bin && \
     | tar -xz -C /app/code/bin/ && \
     chmod +x /app/code/bin/netbird-server
 
-# Download NetBird dashboard (static web UI)
-RUN mkdir -p /app/code/dashboard && \
-    curl -fsSL "https://github.com/netbirdio/dashboard/releases/latest/download/dashboard.tar.gz" \
-    | tar -xz -C /app/code/dashboard/
+# Copy the dashboard release published alongside NetBird v0.65.3.
+COPY --from=dashboard /usr/share/nginx/html/ /app/code/dashboard/
 
 # Copy supervisord config
 COPY supervisord.conf /app/code/supervisord.conf
