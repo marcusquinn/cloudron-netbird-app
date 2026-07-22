@@ -123,6 +123,7 @@ NETBIRD_DOMAIN="${CLOUDRON_APP_DOMAIN}"
 # break if no cert is available. prefer is the safe upgrade from disable — it will
 # use encryption when possible without requiring a trusted CA cert on the client.
 # See: https://docs.cloudron.io/packaging/addons/#postgresql
+# shellcheck disable=SC2153 # CLOUDRON_POSTGRESQL_HOST is injected and validated above.
 PG_DSN="host=${CLOUDRON_POSTGRESQL_HOST} user=${CLOUDRON_POSTGRESQL_USERNAME} password=${CLOUDRON_POSTGRESQL_PASSWORD} dbname=${CLOUDRON_POSTGRESQL_DATABASE} port=${CLOUDRON_POSTGRESQL_PORT} sslmode=prefer"
 
 cat >/app/data/config/config.yaml <<CONFIG_EOF
