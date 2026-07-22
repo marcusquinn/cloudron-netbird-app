@@ -209,6 +209,16 @@ cloudron uninstall --app netbird
 - [ ] STUN port (UDP 3478) is accessible from clients
 - [ ] (Optional) Cloudron SSO can be added as external IdP via dashboard
 
+### Repository Automation Dashboard
+
+The pinned supervisor health issue reports repository-development activity; it
+is not the deployed NetBird application's health check. Its refresh can pause
+while the repository has no active pull requests, assigned issues,
+auto-dispatch work, or workers. Before treating an old `last_refresh:` value as
+a scheduler or application failure, confirm that the stats launch agent is
+loaded and that recent stats-log entries end with a successful health-issue
+update.
+
 ## File Structure
 
 ```text
