@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Managed tag-triggered Cloudron package release validation.
+
+### Changed
+
+- Pinned the final Cloudron base image and dashboard `v2.32.4` image digest.
+- Replaced the moving dashboard `latest` release download with a deterministic
+  multi-stage image copy while preserving NetBird server `v0.65.3`.
+
 ### Security
 
 - Added nginx security headers: `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`, `Referrer-Policy` to all responses.
