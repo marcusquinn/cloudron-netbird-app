@@ -29,6 +29,8 @@ main() {
 	[[ -f "${ROOT_DIR}/media/hero.png" ]] || fail "media/hero.png is missing" || return 1
 	jq -e '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Version catalog contract failed" || return 1
 	assert_contains CHANGELOG '[2.0.2]' || return 1
+	assert_contains PUBLISHING.md 'cloudron versions update --version=<VERSION> --state=published' || return 1
+	jq -e '.versions["2.0.2"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	assert_contains Dockerfile 'netbirdio/netbird-server:0.74.7@sha256:ec97e2fcdf9666af849c293eeaaf0f4ff742f4f6e886d8873f129de8f4f6b7ef AS server' || return 1
 	assert_contains Dockerfile 'netbirdio/dashboard:v2.90.4@sha256:789c274741fdd78b870480dc700b8e6a5a67a4c4016abd2b6b0a1f34bd0fdd41 AS dashboard' || return 1
 	assert_contains Dockerfile 'cloudron/base:5.0.0@sha256:04fd70dbd8ad6149c19de39e35718e024417c3e01dc9c6637eaf4a41ec4e596c' || return 1
