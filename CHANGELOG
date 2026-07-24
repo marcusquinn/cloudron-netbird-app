@@ -1,3 +1,7 @@
+[2.0.4]
+* Restore installation and updates on Cloudron 9.1 and 9.2.
+* Temporarily omit packageUrl until Cloudron 10.0.0 is numerically available.
+
 [2.0.3]
 * Update the combined NetBird server to v0.75.0.
 * Update the NetBird dashboard to v2.90.7.
