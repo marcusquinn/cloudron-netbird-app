@@ -59,6 +59,8 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 - [ ] t012 Prepare NetBird community package publishing ref:GH#43
 
+- [ ] t013 Publish NetBird 2.0.2 Cloudron catalog ref:GH#46
+
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
