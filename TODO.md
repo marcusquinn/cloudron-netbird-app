@@ -63,6 +63,8 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 - [ ] t016 Restore Cloudron 9.2 compatibility ref:GH#53
 
+- [ ] t017 Publish NetBird 2.0.4 Cloudron catalog ref:GH#55
+
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
