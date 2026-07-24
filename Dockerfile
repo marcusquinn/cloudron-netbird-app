@@ -1,5 +1,5 @@
-FROM netbirdio/netbird-server:0.74.7@sha256:ec97e2fcdf9666af849c293eeaaf0f4ff742f4f6e886d8873f129de8f4f6b7ef AS server
-FROM netbirdio/dashboard:v2.90.4@sha256:789c274741fdd78b870480dc700b8e6a5a67a4c4016abd2b6b0a1f34bd0fdd41 AS dashboard
+FROM netbirdio/netbird-server:0.75.0@sha256:9f8dbb2fee412f91acee1a280c6c06fe8a7bea7b615c37530d6a7bba2edcf901 AS server
+FROM netbirdio/dashboard:v2.90.7@sha256:4b9d5eedede5b55737546124162f15ba0c79a32e78ba4c3218549be96ad22fb1 AS dashboard
 FROM cloudron/base:5.0.0@sha256:04fd70dbd8ad6149c19de39e35718e024417c3e01dc9c6637eaf4a41ec4e596c
 
 # Install dependencies
@@ -10,12 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the multi-architecture combined server image published for NetBird v0.74.7.
+# Copy the multi-architecture combined server image published for NetBird v0.75.0.
 RUN mkdir -p /app/code/bin
 COPY --from=server /go/bin/netbird-server /app/code/bin/netbird-server
 RUN chmod +x /app/code/bin/netbird-server
 
-# Copy the dashboard release current when NetBird v0.74.7 was published.
+# Copy the dashboard release current when NetBird v0.75.0 was published.
 COPY --from=dashboard /usr/share/nginx/html/ /app/code/dashboard/
 
 # Copy supervisord config

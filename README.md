@@ -18,7 +18,7 @@ NetBird connects devices into a secure peer-to-peer WireGuard mesh network. The 
 
 ## What this package provides
 
-This Cloudron app packages the **NetBird combined server** (v0.74.7+), which includes:
+This Cloudron app packages the **NetBird combined server** (v0.75.0+), which includes:
 
 - **Management API** -- peer registry, ACLs, setup keys, network routes
 - **Signal server** -- WebRTC ICE negotiation for P2P connection setup
