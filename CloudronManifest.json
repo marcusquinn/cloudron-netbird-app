@@ -13,7 +13,7 @@
   "contactEmail": "marcus@marcusquinn.com",
   "icon": "file://logo.png",
   "documentationUrl": "https://docs.netbird.io",
-  "minBoxVersion": "9.1.0",
+  "minBoxVersion": "10.0.0",
   "memoryLimit": 536870912,
   "optionalSso": true,
   "addons": {
@@ -41,6 +41,7 @@
   "iconUrl": "https://raw.githubusercontent.com/marcusquinn/cloudron-netbird-app/main/logo.png",
   "packagerName": "Marcus Quinn",
   "packagerUrl": "https://github.com/marcusquinn",
+  "packageUrl": "https://github.com/marcusquinn/cloudron-netbird-app",
   "mediaLinks": [
     "https://netbird.io/_next/static/media/centralized-network-management.67616bd3.png"
   ]

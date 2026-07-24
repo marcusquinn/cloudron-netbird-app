@@ -1,6 +1,7 @@
 [2.0.3]
 * Update the combined NetBird server to v0.75.0.
 * Update the NetBird dashboard to v2.90.7.
+* Link the package repository and require Cloudron 10.0.0.
 
 [2.0.2]
 * Add Cloudron community catalog metadata and publishing runbook.
