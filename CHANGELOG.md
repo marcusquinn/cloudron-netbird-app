@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-07-24
+
+### Added
+
+- Cloudron community catalog metadata, publishing runbook, improved icon, and
+  privacy-reviewed 3:1 product hero.
+
+### Changed
+
+- Require Cloudron `9.1.0` for community-package publishing metadata.
+- Generate dashboard runtime configuration under writable app data so the
+  package starts correctly with Cloudron's read-only application code.
+- Keep generated Nginx logs in writable runtime storage and document amd64
+  builds so copied NetBird binaries match the Cloudron base image.
+- Generate the embedded store encryption key as 32 random base64-encoded
+  bytes, matching NetBird's encryption-key contract.
+- Accept HTTP/1.1 on the Cloudron-facing Nginx listener so platform health
+  checks and proxied dashboard/API requests receive valid HTTP responses.
+- Use the embedded identity provider's discovery endpoint for Cloudron health
+  checks so readiness requires both Nginx and the NetBird server.
+
 ## [2.0.1] - 2026-07-22
 
 ### Added

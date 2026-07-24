@@ -1,0 +1,58 @@
+{
+    "stable": true,
+    "versions": {
+        "2.0.2": {
+            "manifest": {
+                "id": "io.netbird.cloudronapp",
+                "title": "NetBird",
+                "author": "Marcus Quinn <marcus@marcusquinn.com>",
+                "description": "Self-hosted WireGuard mesh VPN with SSO, MFA, and granular access controls. Connect devices into a secure peer-to-peer overlay network.",
+                "tagline": "Zero-config WireGuard mesh VPN for teams",
+                "version": "2.0.2",
+                "upstreamVersion": "0.74.7",
+                "healthCheckPath": "/oauth2/.well-known/openid-configuration",
+                "httpPort": 8080,
+                "manifestVersion": 2,
+                "website": "https://netbird.io",
+                "contactEmail": "marcus@marcusquinn.com",
+                "icon": "file://logo.png",
+                "documentationUrl": "https://docs.netbird.io",
+                "minBoxVersion": "9.1.0",
+                "memoryLimit": 536870912,
+                "optionalSso": true,
+                "addons": {
+                    "localstorage": {},
+                    "postgresql": {}
+                },
+                "udpPorts": {
+                    "STUN_PORT": {
+                        "title": "STUN (NAT traversal)",
+                        "description": "UDP port for STUN NAT traversal. Must be accessible from all NetBird clients.",
+                        "defaultValue": 3478,
+                        "containerPort": 3478
+                    }
+                },
+                "tags": [
+                    "vpn",
+                    "wireguard",
+                    "mesh",
+                    "networking",
+                    "security"
+                ],
+                "postInstallMessage": "NetBird is running. Visit the app URL to access the dashboard.\n\nOn first run, you will see the setup page where you can create your admin account.\n\nUDP port ${STUN_PORT} must be accessible from your NetBird clients for NAT traversal.\n\n<sso>Cloudron SSO can be added as an external identity provider via Settings > Identity Providers in the NetBird dashboard after initial setup.</sso>",
+                "configurePath": "/peers",
+                "changelog": "* Add Cloudron community catalog metadata and publishing runbook.\n* Add an improved icon and privacy-reviewed 3:1 product hero.\n* Fix writable runtime config and log paths.\n* Fix platform consistency, encryption-key generation, and health checks.\n",
+                "iconUrl": "https://raw.githubusercontent.com/marcusquinn/cloudron-netbird-app/main/logo.png",
+                "packagerName": "Marcus Quinn",
+                "packagerUrl": "https://github.com/marcusquinn",
+                "mediaLinks": [
+                    "https://netbird.io/_next/static/media/centralized-network-management.67616bd3.png"
+                ],
+                "dockerImage": "marcusquinn/cloudron-netbird-app:2.0.2"
+            },
+            "creationDate": "Fri, 24 Jul 2026 00:40:03 GMT",
+            "ts": "Fri, 24 Jul 2026 00:40:03 GMT",
+            "publishState": "testing"
+        }
+    }
+}

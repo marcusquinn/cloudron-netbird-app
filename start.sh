@@ -96,7 +96,23 @@ generate_secret() {
     return 0
 }
 
-generate_secret "/app/data/config/.encryption_key" 16 "encryption key"
+generate_encryption_key() {
+    local file_path="$1"
+
+    if [[ -s "${file_path}" ]]; then
+        return 0
+    fi
+
+    if ! openssl rand -base64 32 >"${file_path}"; then
+        echo "ERROR: Failed to generate encryption key" >&2
+        rm -f "${file_path}"
+        return 1
+    fi
+    chmod 600 "${file_path}"
+    return 0
+}
+
+generate_encryption_key "/app/data/config/.encryption_key" || exit 1
 ENCRYPTION_KEY=$(cat /app/data/config/.encryption_key)
 
 generate_secret "/app/data/config/.auth_secret" 32 "auth secret"
@@ -211,7 +227,7 @@ DASHENV_EOF
 
 # Generate the transfer config file that the dashboard reads
 # This is what the dashboard's nginx would normally generate from env vars
-DASHBOARD_DIR="/app/code/dashboard"
+DASHBOARD_DIR="/app/data/dashboard"
 if [[ -d "${DASHBOARD_DIR}" ]]; then
     # Write the auth config that the dashboard JS reads
     cat >"${DASHBOARD_DIR}/OIDCConfigResponse" <<OIDC_EOF
@@ -246,7 +262,7 @@ fi
 cat >/app/data/config/nginx.conf <<'NGINX_EOF'
 worker_processes auto;
 pid /run/nginx/nginx.pid;
-error_log /dev/stderr;
+error_log /run/nginx/error.log;
 
 events {
     worker_connections 1024;
@@ -255,7 +271,7 @@ events {
 http {
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
-    access_log /dev/stdout;
+    access_log /run/nginx/access.log;
 
     client_body_temp_path /run/nginx/client_body;
     proxy_temp_path /run/nginx/proxy;
@@ -277,7 +293,7 @@ http {
     }
 
     server {
-        listen 8080 http2;
+        listen 8080;
         server_name _;
 
         # Security headers
@@ -321,7 +337,7 @@ http {
 
         # ---- Dashboard OIDC config endpoint ----
         location = /OIDCConfigResponse {
-            root /app/code/dashboard;
+            root /app/data/dashboard;
             default_type application/json;
             try_files /OIDCConfigResponse =404;
         }
