@@ -13,6 +13,7 @@ name: Linked Issue Check
 # a repository ruleset.
 
 permissions:
+  issues: read
   pull-requests: read
   statuses: write
 
@@ -22,4 +23,4 @@ on:
 
 jobs:
   check:
-    uses: marcusquinn/aidevops/.github/workflows/linked-issue-check-reusable.yml@main
+    uses: marcusquinn/aidevops/.github/workflows/linked-issue-check-reusable.yml@f5ac0cecd63b315a7409ed492216bb6a153b94a3
