@@ -67,6 +67,8 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 - [ ] t018 Fix NetBird 2.0.4 release changelog validation ref:GH#57
 
+- [ ] t019 Repair historical catalog entry for Cloudron 9.2 #bug ref:GH#62
+
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
