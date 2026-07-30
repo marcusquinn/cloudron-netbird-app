@@ -28,6 +28,7 @@ main() {
 	[[ -f "${ROOT_DIR}/DESIGN.md" ]] || fail "DESIGN.md is missing" || return 1
 	[[ -f "${ROOT_DIR}/media/hero.png" ]] || fail "media/hero.png is missing" || return 1
 	jq -e '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Version catalog contract failed" || return 1
+	jq -e '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Historical catalog entries must not use Cloudron-10-only packageUrl" || return 1
 	assert_contains CHANGELOG '[2.0.4]' || return 1
 	assert_contains CHANGELOG.md '[2.0.4]' || return 1
 	assert_contains PUBLISHING.md 'cloudron versions update --version=<VERSION> --state=published' || return 1
