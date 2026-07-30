@@ -20,6 +20,18 @@ assert_contains() {
 	return 0
 }
 
+assert_precedes() {
+	local relative_path="$1"
+	local first="$2"
+	local second="$3"
+	local first_line=""
+	local second_line=""
+	first_line="$(grep -nF -- "$first" "${ROOT_DIR}/${relative_path}" | cut -d: -f1)"
+	second_line="$(grep -nF -- "$second" "${ROOT_DIR}/${relative_path}" | cut -d: -f1)"
+	[[ -n "$first_line" && -n "$second_line" && "$first_line" -lt "$second_line" ]] || fail "${relative_path} must place ${first} before ${second}" || return 1
+	return 0
+}
+
 main() {
 	jq -e '.manifestVersion == 2 and .version == "2.0.5" and .upstreamVersion == "0.75.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
@@ -52,6 +64,8 @@ main() {
 	assert_contains .github/workflows/cloudron-package-release.yml "- 'v*'" || return 1
 	assert_contains .github/workflows/cloudron-package-release.yml 'uses: marcusquinn/aidevops/.github/workflows/cloudron-package-release-reusable.yml@22a6b4b29087ce2fcf3857596a40ff7b2c436482' || return 1
 	assert_contains .github/workflows/cloudron-package-release.yml 'aidevops_ref: 22a6b4b29087ce2fcf3857596a40ff7b2c436482' || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml 'CLOUDRON_CLI_INTEGRITY: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==' || return 1
+	assert_precedes .github/workflows/cloudron-catalog-publish.yml 'registry_integrity=' 'npm install --global --ignore-scripts' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'IMAGE_REPOSITORY: ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'pull_request:' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "github.event_name != 'pull_request'" || return 1
