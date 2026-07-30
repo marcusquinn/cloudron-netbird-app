@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.5] - 2026-07-30
+
+### Added
+
+- Added fail-closed publication after trusted package updates merge: the
+  workflow builds an amd64 image, resolves its immutable GHCR digest, generates
+  and verifies the catalog entry, and creates the matching tag and release.
+
+### Changed
+
+- Published the Cloudron 9.1 and 9.2 compatibility repair as a new immutable
+  package version through the managed release lifecycle.
+
 ## [2.0.4] - 2026-07-24
 
 ### Fixed

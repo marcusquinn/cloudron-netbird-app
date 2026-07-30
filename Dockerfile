@@ -2,6 +2,8 @@ FROM netbirdio/netbird-server:0.75.0@sha256:9f8dbb2fee412f91acee1a280c6c06fe8a7b
 FROM netbirdio/dashboard:v2.90.7@sha256:4b9d5eedede5b55737546124162f15ba0c79a32e78ba4c3218549be96ad22fb1 AS dashboard
 FROM cloudron/base:5.0.0@sha256:04fd70dbd8ad6149c19de39e35718e024417c3e01dc9c6637eaf4a41ec4e596c
 
+LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"
+
 # Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
