@@ -71,6 +71,8 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 - [ ] t020 Automate Cloudron releases after package updates merge #feat #priority:high ref:GH#64
 
+- [ ] t021 Restore release publication after attestation permission failure #bug #priority:high ref:GH#66
+
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
