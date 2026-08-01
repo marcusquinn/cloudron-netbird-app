@@ -20,21 +20,29 @@ tag or digest into the catalog.
 4. The workflow runs `scripts/publish-cloudron-catalog.sh`, which adds the new
    manifest version in testing state, verifies the generated entry and digest,
    promotes that exact version to published, and verifies the final catalog.
-5. The workflow commits only the generated `CloudronVersions.json`, atomically
-   pushes that commit with the matching `v<VERSION>` tag, attests the image
-   digest, and creates the GitHub release, but only after an anonymous pull
-   probe resolves that exact digest. Existing published versions reverify the
-   anonymous image and tagged catalog digest, then reconcile a missing GitHub
-   release. Mutable, unpublished, or conflicting entries fail closed.
-6. For release qualification, test a clean install with
+5. GitHub Actions uses OIDC and Sigstore keyless signing to attest both the
+   immutable image digest and the exact generated `CloudronVersions.json`. The
+   workflow verifies the catalog attestation bundle against this repository,
+   the catalog publication workflow, and `refs/heads/main` before committing.
+6. The workflow commits only the generated `CloudronVersions.json`, atomically
+   pushes that commit with the matching `v<VERSION>` tag, and creates the GitHub
+   release, but only after an anonymous pull probe resolves that exact digest.
+   Existing published versions reverify the anonymous image and tagged catalog
+   digest, attest and verify the current catalog without a version bump, then
+   reconcile a missing GitHub release. Mutable, unpublished, or conflicting
+   entries fail closed.
+7. For release qualification, test a clean install with
    `cloudron install --versions-url <PUBLIC_VERSIONS_URL> --location netbird-test`.
    Also verify upgrade, restart, health checks, and backup/restore.
-7. Optionally sign in to [Cloudron Community Apps](https://ca.cloudron.io), add
+8. Optionally sign in to [Cloudron Community Apps](https://ca.cloudron.io), add
    the same versions URL, and verify the imported icon, screenshot/hero,
    description, changelog, and install URL.
 
 The workflow is the only supported catalog writer. A merge that does not bump
 `CloudronManifest.json` is a verified no-op and does not create another release.
+Cloudron does not currently enforce this keyless provenance; the attestations
+provide independently verifiable supply-chain evidence for operators and
+future policy enforcement.
 
 ## Release credential
 
