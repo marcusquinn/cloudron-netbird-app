@@ -72,6 +72,14 @@ main() {
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'Require trusted publication source' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'EXPECTED_REF: refs/heads/main' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'attestations: write' || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml 'subject-path: CloudronVersions.json' || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml 'gh attestation verify CloudronVersions.json' || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "--bundle \"\${{ steps.attest-catalog.outputs.bundle-path }}\"" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml "--signer-workflow \"\${GITHUB_REPOSITORY}/.github/workflows/cloudron-catalog-publish.yml\"" || return 1
+	assert_contains .github/workflows/cloudron-catalog-publish.yml '--source-ref refs/heads/main' || return 1
+	[[ "$(grep -Fc 'subject-path: CloudronVersions.json' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml")" -eq 2 ]] || fail "Both catalog publication paths must attest CloudronVersions.json" || return 1
+	[[ "$(grep -Fc 'gh attestation verify CloudronVersions.json' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml")" -eq 2 ]] || fail "Both catalog publication paths must verify catalog provenance" || return 1
+	[[ "$(grep -Fc -- '--source-ref refs/heads/main' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml")" -eq 2 ]] || fail "Both catalog provenance checks must require main as the source ref" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'scripts/publish-cloudron-catalog.sh' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml ".versions[\$version].manifest.dockerImage" || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "git push --atomic origin HEAD:main \"v\${RELEASE_VERSION}\"" || return 1
@@ -87,6 +95,8 @@ main() {
 	assert_contains .github/workflows/cloudron-catalog-publish.yml "chore: publish Cloudron package \${RELEASE_VERSION} [skip ci]" || return 1
 	assert_precedes .github/workflows/cloudron-catalog-publish.yml 'git diff --exit-code' 'gh auth setup-git' || return 1
 	assert_precedes .github/workflows/cloudron-catalog-publish.yml 'gh auth setup-git' 'git push --atomic' || return 1
+	assert_precedes .github/workflows/cloudron-catalog-publish.yml 'Publish and verify catalog entry' 'Attest catalog provenance' || return 1
+	assert_precedes .github/workflows/cloudron-catalog-publish.yml 'Verify catalog provenance' 'Commit generated catalog' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'Verify the build source stayed immutable' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'Verify anonymous registry visibility' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'Verify existing immutable image is anonymously pullable' || return 1

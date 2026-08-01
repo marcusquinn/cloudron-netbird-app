@@ -73,6 +73,8 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 - [ ] t021 Restore release publication after attestation permission failure #bug #priority:high ref:GH#66
 
+- [ ] t022 Add keyless provenance for Cloudron catalogs ref:GH#74
+
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
