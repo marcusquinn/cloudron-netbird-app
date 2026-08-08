@@ -1,6 +1,7 @@
 [2.0.8]
 * Update the combined NetBird server to v0.76.2.
 * Retain the current NetBird dashboard at v2.90.8.
+* Update the final Cloudron base image to v5.1.0.
 
 [2.0.7]
 * Update the combined NetBird server to v0.76.1.
