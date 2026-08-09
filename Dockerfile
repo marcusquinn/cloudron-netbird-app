@@ -33,7 +33,4 @@ EXPOSE 8080
 # Expose STUN UDP port
 EXPOSE 3478/udp
 
-# The Cloudron base image provides this unprivileged runtime user.
-USER cloudron
-
 CMD ["/app/code/start.sh"]
