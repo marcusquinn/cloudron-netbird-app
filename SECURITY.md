@@ -4,8 +4,8 @@
 
 | App Version | Upstream NetBird | Supported |
 |-------------|------------------|-----------:|
-| 2.0.0       | 0.65.3           | Yes        |
-| < 2.0.0     | N/A              | No         |
+| 2.0.9       | 0.76.3           | Yes        |
+| < 2.0.9     | N/A              | No         |
 
 ## Reporting a Vulnerability
 
