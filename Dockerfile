@@ -1,5 +1,5 @@
 FROM netbirdio/netbird-server:0.76.3@sha256:162e66f9a2ee5ff669b14857deef7f42ff2d818ae8ffd860b67837108f69f187 AS server
-FROM netbirdio/dashboard:v2.90.8@sha256:6b3df5d07cbcf8fb81a6a18bb99fadb220e66a554c0e0fe71cd17a93c15769b1 AS dashboard
+FROM netbirdio/dashboard:v2.90.10@sha256:1b59e1c905c9b2cfe79434e0c75e34f5c03a83bb776c4fb6fa2e41bee3e49df5 AS dashboard
 FROM cloudron/base:5.1.0@sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e
 
 LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"
