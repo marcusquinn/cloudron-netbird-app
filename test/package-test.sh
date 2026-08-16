@@ -43,6 +43,8 @@ main() {
 	jq -e '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Historical catalog entries must not use Cloudron-10-only packageUrl" || return 1
 	assert_contains CHANGELOG '[2.0.10]' || return 1
 	assert_contains CHANGELOG.md '[2.0.10] - 2026-08-16' || return 1
+	assert_contains SECURITY.md '| 2.0.10      | 0.77.0           | Yes        |' || return 1
+	assert_contains README.md '| Cloudron | v9.1.0+ |' || return 1
 	assert_contains PUBLISHING.md 'is standing authorization for the managed publication' || return 1
 	assert_contains PUBLISHING.md 'ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
 	jq -e '.versions["2.0.3"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1

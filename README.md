@@ -33,7 +33,7 @@ NetBird clients connect to this server to join the mesh.
 
 | Resource | Minimum |
 |----------|---------|
-| Cloudron | v7.6.0+ |
+| Cloudron | v9.1.0+ |
 | Memory | 512 MB (configurable in manifest) |
 | Ports | TCP 80/443 (handled by Cloudron) + **UDP 3478** (STUN, exposed via `udpPorts`) |
 
