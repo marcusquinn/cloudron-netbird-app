@@ -33,7 +33,7 @@ assert_precedes() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.0.10" and .upstreamVersion == "0.77.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.0.11" and .upstreamVersion == "0.77.1" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/PUBLISHING.md" ]] || fail "PUBLISHING.md is missing" || return 1
@@ -41,18 +41,20 @@ main() {
 	[[ -f "${ROOT_DIR}/media/hero.png" ]] || fail "media/hero.png is missing" || return 1
 	jq -e '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Version catalog contract failed" || return 1
 	jq -e '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Historical catalog entries must not use Cloudron-10-only packageUrl" || return 1
-	assert_contains CHANGELOG '[2.0.10]' || return 1
-	assert_contains CHANGELOG.md '[2.0.10] - 2026-08-16' || return 1
-	assert_contains SECURITY.md '| 2.0.10      | 0.77.0           | Yes        |' || return 1
+	assert_contains CHANGELOG '[2.0.11]' || return 1
+	assert_contains CHANGELOG.md '[2.0.11] - 2026-08-22' || return 1
+	assert_contains SECURITY.md '| 2.0.11      | 0.77.1           | Yes        |' || return 1
 	assert_contains README.md '| Cloudron | v9.1.0+ |' || return 1
 	assert_contains PUBLISHING.md 'is standing authorization for the managed publication' || return 1
 	assert_contains PUBLISHING.md 'ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
 	jq -e '.versions["2.0.3"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
-	assert_contains Dockerfile 'netbirdio/netbird-server:0.77.0@sha256:f0317a42ceeed4ea14c393bd975c2e801517e33efb0d5ace4258d8dcfdbe0689 AS server' || return 1
+	assert_contains Dockerfile 'netbirdio/netbird-server:0.77.1@sha256:e71f39cefcd90956d818dc4179084fd47d39f0741d1211b818ec640766b5794d AS server' || return 1
 	assert_contains Dockerfile 'netbirdio/dashboard:v2.90.10@sha256:1b59e1c905c9b2cfe79434e0c75e34f5c03a83bb776c4fb6fa2e41bee3e49df5 AS dashboard' || return 1
 	assert_contains Dockerfile 'cloudron/base:5.1.0@sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e' || return 1
 	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
 	assert_contains start.sh 'DASHBOARD_DIR="/app/data/dashboard"' || return 1
+	assert_contains start.sh 'exec gosu cloudron:cloudron /usr/bin/supervisord --configuration /app/code/supervisord.conf --nodaemon' || return 1
+	[[ "$(grep -Fc 'user=cloudron' "${ROOT_DIR}/supervisord.conf")" -eq 2 ]] || fail "Both managed services must run as cloudron" || return 1
 	assert_contains start.sh 'root /app/data/dashboard;' || return 1
 	assert_contains start.sh 'error_log /run/nginx/error.log;' || return 1
 	assert_contains start.sh 'listen 8080;' || return 1

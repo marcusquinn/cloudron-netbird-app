@@ -363,4 +363,4 @@ touch /app/data/.initialized
 # PHASE 6: Process Launch (supervisord)
 # ============================================
 echo "==> Launching NetBird services"
-exec /usr/bin/supervisord --configuration /app/code/supervisord.conf --nodaemon
+exec gosu cloudron:cloudron /usr/bin/supervisord --configuration /app/code/supervisord.conf --nodaemon
