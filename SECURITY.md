@@ -2,8 +2,9 @@
 
 ## Supported Versions
 
-| App Version | Upstream NetBird | Supported |
+| App Version | Upstream NetBird | Supported  |
 |-------------|------------------|-----------:|
+| 2.0.12      | 0.77.1           | Yes        |
 | 2.0.11      | 0.77.1           | Yes        |
 | 2.0.9       | 0.76.3           | Yes        |
 | < 2.0.9     | N/A              | No         |

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.12] - 2026-09-11
+
+- Fixed Supervisor startup by restoring its privileged launcher for container
+  log and PID-file access on fresh installs and restarts (#100, #101).
+- Preserved unprivileged nginx and NetBird services and corrected the startup
+  regression-test expectation.
+
 ## [2.0.11] - 2026-08-22
 
 ### Changed
