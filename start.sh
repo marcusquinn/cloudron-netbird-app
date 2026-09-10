@@ -363,4 +363,6 @@ touch /app/data/.initialized
 # PHASE 6: Process Launch (supervisord)
 # ============================================
 echo "==> Launching NetBird services"
-exec gosu cloudron:cloudron /usr/bin/supervisord --configuration /app/code/supervisord.conf --nodaemon
+# Supervisor needs root to open container log pipes and write its /run PID file.
+# Both managed services drop to cloudron via their supervisord.conf user settings.
+exec /usr/bin/supervisord --configuration /app/code/supervisord.conf --nodaemon
