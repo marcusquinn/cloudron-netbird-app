@@ -53,7 +53,8 @@ main() {
 	assert_contains Dockerfile 'cloudron/base:5.1.0@sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e' || return 1
 	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
 	assert_contains start.sh 'DASHBOARD_DIR="/app/data/dashboard"' || return 1
-	assert_contains start.sh 'exec gosu cloudron:cloudron /usr/bin/supervisord --configuration /app/code/supervisord.conf --nodaemon' || return 1
+	# Keep the parent privileged for log/PID access; only its services drop privileges.
+	assert_contains start.sh 'exec /usr/bin/supervisord --configuration /app/code/supervisord.conf --nodaemon' || return 1
 	[[ "$(grep -Fc 'user=cloudron' "${ROOT_DIR}/supervisord.conf")" -eq 2 ]] || fail "Both managed services must run as cloudron" || return 1
 	assert_contains start.sh 'root /app/data/dashboard;' || return 1
 	assert_contains start.sh 'error_log /run/nginx/error.log;' || return 1
