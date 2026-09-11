@@ -58,6 +58,8 @@ main() {
 	[[ "$(grep -Fc 'user=cloudron' "${ROOT_DIR}/supervisord.conf")" -eq 2 ]] || fail "Both managed services must run as cloudron" || return 1
 	assert_contains start.sh 'root /app/data/dashboard;' || return 1
 	assert_contains start.sh 'error_log /run/nginx/error.log;' || return 1
+	assert_contains start.sh "try_files \$uri.html \$uri \$uri/ /index.html;" || return 1
+	assert_contains start.sh "rewrite ^(.+)/\$ \$1 last;" || return 1
 	assert_contains start.sh 'listen 8080;' || return 1
 	assert_contains start.sh 'openssl rand -base64 32' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'platforms: linux/amd64' || return 1
