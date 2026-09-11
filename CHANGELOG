@@ -1,3 +1,7 @@
+[2.0.13]
+* Fix setup and dashboard routes shadowed by Next.js metadata directories.
+* Add an opt-in developer smoke check for startup, restart, privileges and cleanup.
+
 [2.0.12]
 * Fix Supervisor startup failing to open container logs on fresh installs and restarts.
 * Keep nginx and NetBird running as the unprivileged cloudron user.
