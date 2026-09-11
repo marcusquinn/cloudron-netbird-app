@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.13] - 2026-09-11
+
+- Fixed `/setup` and `/setup/` returning 403 by preferring exported dashboard HTML
+  over Next.js metadata directories (#105, #106).
+- Added a bounded opt-in container smoke check for startup/restart, strict HTTP
+  success, child privileges, persistent data, and safe cleanup (#104, #107).
+
 ## [2.0.12] - 2026-09-11
 
 - Fixed Supervisor startup by restoring its privileged launcher for container
