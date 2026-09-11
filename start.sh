@@ -345,7 +345,9 @@ http {
         # ---- Dashboard (catch-all, lowest priority) ----
         location / {
             root /app/code/dashboard;
-            try_files $uri $uri/ /index.html;
+            # Next.js exports page.html beside page/ metadata directories.
+            rewrite ^(.+)/$ $1 last;
+            try_files $uri.html $uri $uri/ /index.html;
         }
     }
 }
