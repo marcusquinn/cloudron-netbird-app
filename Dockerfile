@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the multi-architecture combined server image published for NetBird v0.77.1.
+# Copy the multi-architecture combined server image published for NetBird v0.78.1.
 RUN mkdir -p /app/code/bin
 COPY --from=server /go/bin/netbird-server /app/code/bin/netbird-server
 RUN chmod +x /app/code/bin/netbird-server
