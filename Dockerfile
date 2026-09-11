@@ -17,7 +17,7 @@ RUN mkdir -p /app/code/bin
 COPY --from=server /go/bin/netbird-server /app/code/bin/netbird-server
 RUN chmod +x /app/code/bin/netbird-server
 
-# Copy the dashboard release current when NetBird v0.77.1 was published.
+# Copy the independently pinned dashboard release.
 COPY --from=dashboard /usr/share/nginx/html/ /app/code/dashboard/
 
 # Copy supervisord config
