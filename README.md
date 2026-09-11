@@ -149,7 +149,10 @@ Uses Cloudron's PostgreSQL addon automatically. No manual database setup require
 
 ### Health Check
 
-The manifest uses `/api/accounts` as the health check endpoint. This is served by the management API through the internal nginx proxy. The combined server also exposes a health endpoint on port 9000, but that port is not routed through nginx.
+The manifest uses `/oauth2/.well-known/openid-configuration` as the health check
+endpoint, served through the internal nginx proxy on port 8080. The combined
+server also exposes a health endpoint on port 9000, which is not routed through
+nginx.
 
 ### Persistent Data
 
@@ -191,6 +194,36 @@ cloudron uninstall --app netbird
 ```
 
 ### Testing Checklist
+
+#### Local container smoke check
+
+The optional smoke check requires Python 3 and a running Docker engine. Build
+the linux/amd64 candidate and pull the pinned PostgreSQL 16 fixture first:
+
+```bash
+docker build --platform linux/amd64 -t netbird-smoke:candidate .
+docker pull postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20
+python3 test/runtime-smoke.py --image netbird-smoke:candidate
+```
+
+The runner never pulls a candidate automatically. It uses disposable labeled
+containers, a network, and an application-data volume, with no published host
+ports or TTY. Both containers are limited to 512 MB and two CPUs. The app has a
+read-only root filesystem and writable `/run`, `/tmp`, and `/app/data`.
+Outbound access is needed for NetBird's geolocation database download.
+
+Fresh startup and restart must pass the manifest health check, setup/config
+requests, stable parent/child UID checks, database initialization, and persisted
+secret/data checks. Raw logs, credentials, and secret fingerprints are withheld.
+The default test deadline is 180 seconds (`--timeout` adjusts it), plus up to 60
+seconds for ownership-checked cleanup on success, failure, or SIGINT/SIGTERM.
+Cleanup failures print the exact owned resource names and label to inspect;
+remove only those resources after confirming that label. SIGKILL or a stopped
+Docker daemon can prevent cleanup. Never use a broad Docker prune as recovery.
+
+This is not a live Cloudron, backup/restore, VPN-client, or SSO test. The fast
+`bash test/package-test.sh` remains independent of Docker. Complete the manual
+checklist below for live-instance qualification.
 
 - [ ] Fresh install completes without errors
 - [ ] Dashboard loads at app URL
