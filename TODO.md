@@ -46,7 +46,6 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 -->
 
 ## Ready
-- [ ] t23 Fix first-run dashboard setup authentication and STUN port mapping #auto-dispatch ~1h ref:GH#114 logged:2026-09-11
 
 <!-- Tasks with no open blockers - run /ready to refresh -->
 
@@ -90,6 +89,7 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 ## Done
 
+- [x] t23 Fix first-run dashboard setup authentication and STUN port mapping #auto-dispatch ~1h ref:GH#114 logged:2026-09-11 pr:#115 testing:runtime-verified completed:2026-09-11
 <!--TOON:done[7]{id,desc,owner,tags,est,actual,logged,started,completed,status}:
 t004,Audit README.md — ensure version references current and install instructions accurate and configuration options complete and screenshots/examples up to date,marcus,docs audit,~30m,~30m,2026-03-01,,2026-03-01,done
 t005,Fix unused FIRST_RUN variable (ShellCheck SC2034),marcus,quality shellcheck,~15m,~15m,2026-03-01,,2026-03-01,done
