@@ -1,3 +1,8 @@
+[2.0.15]
+* Fix fresh installs falling into unauthenticated login instead of initial owner setup.
+* Fix custom STUN ports by using the selected UDP port for both Cloudron exposure and the NetBird listener.
+* Verify initial owner creation and setup-state persistence in the runtime smoke test.
+
 [2.0.14]
 * Update the combined NetBird server to v0.78.1.
 * Update the NetBird dashboard to v2.92.0.

@@ -65,7 +65,8 @@ fi
 # ============================================
 mkdir -p /app/data/config
 mkdir -p /app/data/netbird
-mkdir -p /app/data/dashboard
+mkdir -p /run/dashboard
+cp -a /app/code/dashboard/. /run/dashboard/
 mkdir -p /run/nginx/client_body /run/nginx/proxy /run/nginx/fastcgi /run/nginx/scgi /run/nginx/uwsgi
 mkdir -p /run/netbird
 
@@ -175,78 +176,47 @@ CONFIG_EOF
 export NETBIRD_STORE_ENGINE_POSTGRES_DSN="postgres://${CLOUDRON_POSTGRESQL_USERNAME}:${CLOUDRON_POSTGRESQL_PASSWORD}@${CLOUDRON_POSTGRESQL_HOST}:${CLOUDRON_POSTGRESQL_PORT}/${CLOUDRON_POSTGRESQL_DATABASE}?sslmode=prefer"
 
 # ============================================
-# PHASE 4b: Dashboard Environment
+# PHASE 4b: Dashboard Runtime Configuration
 # ============================================
-# The dashboard container (netbirdio/dashboard) reads these from dashboard.env.
-# We serve the dashboard static files via our nginx, but the JS app reads
-# these values from /api and window.__RUNTIME_CONFIG__ at load time.
-# The dashboard's own nginx injects these -- since we serve the static files
-# directly, we write a runtime config JS file instead.
+# The exported dashboard embeds placeholders in config.json and generated
+# assets. Mirror the pinned upstream dashboard init script: replace only the
+# supported runtime variables in an ephemeral copy, leaving /app/code readonly.
 
-cat >/app/data/dashboard/config.json <<DASH_EOF
-{
-  "NETBIRD_MGMT_API_ENDPOINT": "https://${NETBIRD_DOMAIN}",
-  "NETBIRD_MGMT_GRPC_API_ENDPOINT": "https://${NETBIRD_DOMAIN}",
-  "AUTH_AUDIENCE": "netbird-dashboard",
-  "AUTH_CLIENT_ID": "netbird-dashboard",
-  "AUTH_CLIENT_SECRET": "",
-  "AUTH_AUTHORITY": "https://${NETBIRD_DOMAIN}/oauth2",
-  "USE_AUTH0": "false",
-  "AUTH_SUPPORTED_SCOPES": "openid profile email groups",
-  "AUTH_REDIRECT_URI": "/nb-auth",
-  "AUTH_SILENT_REDIRECT_URI": "/nb-silent-auth"
-}
-DASH_EOF
+export USE_AUTH0="false"
+export AUTH_AUDIENCE="netbird-dashboard"
+export AUTH_AUTHORITY="https://${NETBIRD_DOMAIN}/oauth2"
+export AUTH_CLIENT_ID="netbird-dashboard"
+export AUTH_CLIENT_SECRET=""
+export AUTH_SUPPORTED_SCOPES="openid profile email groups"
+export NETBIRD_MGMT_API_ENDPOINT="https://${NETBIRD_DOMAIN}"
+export NETBIRD_MGMT_GRPC_API_ENDPOINT="https://${NETBIRD_DOMAIN}"
+export AUTH_REDIRECT_URI="/nb-auth"
+export AUTH_SILENT_REDIRECT_URI="/nb-silent-auth"
+export NETBIRD_TOKEN_SOURCE="accessToken"
+export NETBIRD_DRAG_QUERY_PARAMS="false"
+export NETBIRD_AUTH_SERVICE_URL=""
+export NETBIRD_WASM_PATH=""
+export NETBIRD_LICENSED="false"
+export NETBIRD_CLOUD="false"
+export NETBIRD_AGENT_NETWORK_ONLY="false"
+export NETBIRD_AGENT_NETWORK_ENABLED="false"
 
-# Also write the OIDCConfigResponse that the dashboard fetches
-# The dashboard JS fetches this from the management API, but we also
-# need to ensure the static dashboard files have the right config.
-# Write a .env file that the dashboard's entrypoint would use:
-cat >/app/data/dashboard/.env <<DASHENV_EOF
-NETBIRD_MGMT_API_ENDPOINT=https://${NETBIRD_DOMAIN}
-NETBIRD_MGMT_GRPC_API_ENDPOINT=https://${NETBIRD_DOMAIN}
-AUTH_AUDIENCE=netbird-dashboard
-AUTH_CLIENT_ID=netbird-dashboard
-AUTH_CLIENT_SECRET=
-AUTH_AUTHORITY=https://${NETBIRD_DOMAIN}/oauth2
-USE_AUTH0=false
-AUTH_SUPPORTED_SCOPES=openid profile email groups
-AUTH_REDIRECT_URI=/nb-auth
-AUTH_SILENT_REDIRECT_URI=/nb-silent-auth
-NGINX_SSL_PORT=443
-LETSENCRYPT_DOMAIN=none
-DASHENV_EOF
-
-# ============================================
-# PHASE 4c: Inject Dashboard Runtime Config
-# ============================================
-# The upstream netbirdio/dashboard container has its own nginx that
-# generates a runtime config. Since we serve the dashboard static files
-# directly, we need to generate the config that the dashboard JS expects.
-# The dashboard looks for /OIDCConfigResponse at load time.
-
-# Generate the transfer config file that the dashboard reads
-# This is what the dashboard's nginx would normally generate from env vars
-DASHBOARD_DIR="/app/data/dashboard"
-if [[ -d "${DASHBOARD_DIR}" ]]; then
-    # Write the auth config that the dashboard JS reads
-    cat >"${DASHBOARD_DIR}/OIDCConfigResponse" <<OIDC_EOF
-{
-  "audience": "netbird-dashboard",
-  "authority": "https://${NETBIRD_DOMAIN}/oauth2",
-  "clientId": "netbird-dashboard",
-  "clientSecret": "",
-  "apiOrigin": "https://${NETBIRD_DOMAIN}",
-  "grpcApiOrigin": "https://${NETBIRD_DOMAIN}",
-  "redirectURI": "/nb-auth",
-  "silentRedirectURI": "/nb-silent-auth",
-  "scopes": "openid profile email groups",
-  "useAuth0": false
-}
-OIDC_EOF
+# Keep these placeholders literal for the envsubst allowlist.
+# shellcheck disable=SC2016
+DASHBOARD_ENV_VARS='${USE_AUTH0} ${AUTH_AUDIENCE} ${AUTH_AUTHORITY} ${AUTH_CLIENT_ID} ${AUTH_CLIENT_SECRET} ${AUTH_SUPPORTED_SCOPES} ${NETBIRD_MGMT_API_ENDPOINT} ${NETBIRD_MGMT_GRPC_API_ENDPOINT} ${AUTH_REDIRECT_URI} ${AUTH_SILENT_REDIRECT_URI} ${NETBIRD_TOKEN_SOURCE} ${NETBIRD_DRAG_QUERY_PARAMS} ${NETBIRD_AUTH_SERVICE_URL} ${NETBIRD_WASM_PATH} ${NETBIRD_LICENSED} ${NETBIRD_CLOUD} ${NETBIRD_AGENT_NETWORK_ONLY} ${NETBIRD_AGENT_NETWORK_ENABLED}'
+dashboard_files=()
+while IFS= read -r -d '' dashboard_file; do
+    dashboard_files+=("${dashboard_file}")
+done < <(grep -RIlZ -- "AUTH_SUPPORTED_SCOPES" /run/dashboard)
+if [[ ${#dashboard_files[@]} -eq 0 ]]; then
+    echo "ERROR: Dashboard runtime configuration placeholders were not found" >&2
+    exit 1
 fi
+for dashboard_file in "${dashboard_files[@]}"; do
+    envsubst "${DASHBOARD_ENV_VARS}" <"${dashboard_file}" >"${dashboard_file}.tmp"
+    mv "${dashboard_file}.tmp" "${dashboard_file}"
+done
 
-# ============================================
 # PHASE 4d: nginx Configuration
 # ============================================
 # This nginx sits between Cloudron's reverse proxy (which terminates TLS)
@@ -335,16 +305,9 @@ http {
             proxy_set_header Host $host;
         }
 
-        # ---- Dashboard OIDC config endpoint ----
-        location = /OIDCConfigResponse {
-            root /app/data/dashboard;
-            default_type application/json;
-            try_files /OIDCConfigResponse =404;
-        }
-
         # ---- Dashboard (catch-all, lowest priority) ----
         location / {
-            root /app/code/dashboard;
+            root /run/dashboard;
             # Next.js exports page.html beside page/ metadata directories.
             rewrite ^(.+)/$ $1 last;
             try_files $uri.html $uri $uri/ /index.html;
@@ -356,7 +319,7 @@ NGINX_EOF
 # ============================================
 # PHASE 5: Permissions
 # ============================================
-chown -R cloudron:cloudron /app/data /run/nginx /run/netbird
+chown -R cloudron:cloudron /app/data /run/dashboard /run/nginx /run/netbird
 
 # Mark initialized
 touch /app/data/.initialized

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.15] - 2026-09-11
+
+- Fixed fresh installs falling into an unauthenticated OIDC login by applying the
+  current dashboard runtime configuration to its exported assets.
+- Fixed custom STUN ports by making NetBird listen on the same UDP port Cloudron
+  exposes instead of retaining an incompatible fixed container port.
+- Expanded runtime smoke coverage to create the initial owner through the real
+  unauthenticated setup API and preserve setup state across restart.
+
 ## [2.0.14] - 2026-09-11
 
 - Updated the combined NetBird server from `v0.77.1` to `v0.78.1` (#99).

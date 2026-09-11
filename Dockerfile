@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
     supervisor \
     jq \
+    gettext-base \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 

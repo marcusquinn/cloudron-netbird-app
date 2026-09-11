@@ -36,6 +36,8 @@ class SmokeCheck:
         self.app = self.prefix + "-app"
         self.volume = self.prefix + "-data"
         self.resources = []
+        self.owner_email = "owner-" + secrets.token_hex(6) + "@example.invalid"
+        self.owner_password = "Smoke-" + self.owner[-24:]
         self.password = secrets.token_hex(24)
 
     def command(self, *args, check=True, environment=None, deadline=None):
@@ -122,19 +124,61 @@ class SmokeCheck:
             "--env", "CLOUDRON_POSTGRESQL_USERNAME=netbird",
             "--env", "CLOUDRON_POSTGRESQL_PASSWORD",
             "--env", "CLOUDRON_POSTGRESQL_DATABASE=netbird",
-            "--env", "CLOUDRON_POSTGRESQL_PORT=5432", self.image,
+            "--env", "CLOUDRON_POSTGRESQL_PORT=5432",
+            "--env", "STUN_PORT=5349", self.image,
             environment=dict(os.environ, CLOUDRON_POSTGRESQL_PASSWORD=self.password),
         )
         self.command("start", self.app)
 
-    def http(self, path):
-        code, output, error = self.command(
+    def http(self, path, method="GET", data=None):
+        args = [
             "exec", self.app, "curl", "-fsSL", "--max-redirs", "3", "--max-time", "2",
+            "--request", method, "--header", "Content-Type: application/json",
             "--write-out", "\n%{http_code}",
-            "http://127.0.0.1:" + str(self.port) + path, check=False,
-        )
+        ]
+        if data is not None:
+            args += ["--data", json.dumps(data)]
+        args.append("http://127.0.0.1:" + str(self.port) + path)
+        code, output, error = self.command(*args, check=False)
         body, _, status = output.rpartition("\n")
         return (0 if code == 0 and status == "200" else 1), body, error
+
+    def instance_setup_required(self):
+        response = self.http("/api/instance")
+        if response[0]:
+            raise SmokeError("unauthenticated instance status endpoint unavailable")
+        return json.loads(response[1]).get("setup_required")
+
+    def complete_setup(self):
+        response = self.http("/api/setup", method="POST", data={
+            "email": self.owner_email,
+            "password": self.owner_password,
+            "name": "Smoke Owner",
+        })
+        if response[0]:
+            raise SmokeError("unauthenticated initial owner setup failed")
+        result = json.loads(response[1])
+        if result.get("email") != self.owner_email or not result.get("user_id"):
+            raise SmokeError("initial owner setup response mismatch")
+
+    def dashboard_runtime_config(self):
+        placeholders = self.command("exec", self.app, "grep", "-RIl",
+                                    "AUTH_SUPPORTED_SCOPES", "/run/dashboard", check=False)
+        if placeholders[0] == 0:
+            raise SmokeError("dashboard runtime placeholders were not substituted")
+        configured = self.command("exec", self.app, "grep", "-RIl",
+                                  "https://" + DOMAIN, "/run/dashboard", check=False)
+        if configured[0] != 0:
+            raise SmokeError("dashboard runtime origin was not injected")
+
+    def stun_listener(self):
+        config = self.command("exec", self.app, "grep", "-F", "--", "- 5349",
+                              "/app/data/config/config.yaml", check=False)
+        if config[0] != 0:
+            raise SmokeError("selected STUN port missing from generated config")
+        sockets = self.command("exec", self.app, "ss", "-H", "-lun", check=False)
+        if sockets[0] != 0 or ":5349" not in sockets[1]:
+            raise SmokeError("NetBird is not listening on the selected STUN UDP port")
 
     def processes(self):
         expected_uid = self.command("exec", self.app, "id", "-u", "cloudron")[1].strip()
@@ -152,15 +196,18 @@ class SmokeCheck:
             selected.extend(tuple(row) for row in matches)
         return sorted(selected)
 
-    def verify(self, phase):
+    def verify(self, phase, setup_required):
         self.stage = phase + " health and process checks"
         self.wait(lambda: self.http(self.health_path), "manifest health endpoint")
         discovery = self.http("/oauth2/.well-known/openid-configuration")
         if discovery[0] or json.loads(discovery[1]).get("issuer") != "https://" + DOMAIN + "/oauth2":
             raise SmokeError("OIDC discovery issuer mismatch")
-        for path in ("/setup", "/OIDCConfigResponse"):
-            if self.http(path)[0]:
-                raise SmokeError("setup/config endpoint unavailable")
+        if self.http("/setup")[0]:
+            raise SmokeError("setup page unavailable")
+        if self.instance_setup_required() is not setup_required:
+            raise SmokeError("instance setup state mismatch")
+        self.dashboard_runtime_config()
+        self.stun_listener()
         before = self.processes()
         time.sleep(min(3, max(0, self.deadline - time.monotonic())))
         if self.processes() != before or self.http(self.health_path)[0]:
@@ -179,15 +226,19 @@ class SmokeCheck:
     def run(self):
         self.prerequisites()
         self.start()
-        original = self.verify("fresh")
-        # A private, non-secret marker proves application-volume persistence too.
+        original = self.verify("fresh", True)
+        self.stage = "initial owner setup"
+        self.complete_setup()
+        if self.instance_setup_required() is not False:
+            raise SmokeError("instance still requires setup after owner creation")
+        print("PASS: unauthenticated initial owner setup completed", flush=True)
         self.command("exec", self.app, "touch", "/app/data/smoke-persistence-marker")
         self.stage = "restart"
         self.command("restart", "--time", "10", self.app)
-        if self.verify("restart") != original:
+        if self.verify("restart", False) != original:
             raise SmokeError("persistent encryption/auth secrets changed across restart")
         self.command("exec", self.app, "test", "-f", "/app/data/smoke-persistence-marker")
-        print("PASS: persistent data and secrets survived restart (values withheld)", flush=True)
+        print("PASS: setup state, persistent data and secrets survived restart (values withheld)", flush=True)
 
     def cleanup(self):
         deadline = time.monotonic() + 60
