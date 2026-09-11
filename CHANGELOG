@@ -1,3 +1,7 @@
+[2.0.14]
+* Update the combined NetBird server to v0.78.1.
+* Update the NetBird dashboard to v2.92.0.
+
 [2.0.13]
 * Fix setup and dashboard routes shadowed by Next.js metadata directories.
 * Add an opt-in developer smoke check for startup, restart, privileges and cleanup.

@@ -33,7 +33,7 @@ assert_precedes() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.0.13" and .upstreamVersion == "0.78.1" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.0.14" and .upstreamVersion == "0.78.1" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/PUBLISHING.md" ]] || fail "PUBLISHING.md is missing" || return 1
@@ -41,9 +41,9 @@ main() {
 	[[ -f "${ROOT_DIR}/media/hero.png" ]] || fail "media/hero.png is missing" || return 1
 	jq -e '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Version catalog contract failed" || return 1
 	jq -e '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Historical catalog entries must not use Cloudron-10-only packageUrl" || return 1
-	assert_contains CHANGELOG '[2.0.13]' || return 1
-	assert_contains CHANGELOG.md '[2.0.13] - 2026-09-11' || return 1
-	assert_contains SECURITY.md '| 2.0.13      | 0.77.1           | Yes        |' || return 1
+	assert_contains CHANGELOG '[2.0.14]' || return 1
+	assert_contains CHANGELOG.md '[2.0.14] - 2026-09-11' || return 1
+	assert_contains SECURITY.md '| 2.0.14      | 0.78.1           | Yes        |' || return 1
 	assert_contains README.md '| Cloudron | v9.1.0+ |' || return 1
 	assert_contains PUBLISHING.md 'is standing authorization for the managed publication' || return 1
 	assert_contains PUBLISHING.md 'ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
