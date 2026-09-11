@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.14] - 2026-09-11
+
+- Updated the combined NetBird server from `v0.77.1` to `v0.78.1` (#99).
+- Updated the NetBird dashboard from `v2.90.10` to `v2.92.0` (#98).
+
 ## [2.0.13] - 2026-09-11
 
 - Fixed `/setup` and `/setup/` returning 403 by preferring exported dashboard HTML
