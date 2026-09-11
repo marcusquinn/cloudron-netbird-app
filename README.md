@@ -35,9 +35,9 @@ NetBird clients connect to this server to join the mesh.
 |----------|---------|
 | Cloudron | v9.1.0+ |
 | Memory | 512 MB (configurable in manifest) |
-| Ports | TCP 80/443 (handled by Cloudron) + **UDP 3478** (STUN, exposed via `udpPorts`) |
+| Ports | TCP 80/443 (handled by Cloudron) + one configurable UDP port for STUN (3478 by default) |
 
-**Important**: UDP port 3478 must be accessible from all NetBird clients for NAT traversal.
+**Important**: The selected STUN UDP port must be accessible from all NetBird clients for NAT traversal. Cloudron maps the same selected port inside and outside the container.
 
 ## Installation
 
@@ -125,7 +125,7 @@ Cloudron Server
 |  |                                                    | |
 |  |  netbird-server :80 (combined binary)              | |
 |  |    Management + Signal + Relay + embedded IdP      | |
-|  |    STUN :3478/udp (exposed directly)               | |
+|  |    STUN :selected UDP port (exposed directly)      | |
 |  |                                                    | |
 |  +---------------------------------------------------+ |
 |                                                        |
@@ -135,7 +135,7 @@ Cloudron Server
 
 ## Configuration
 
-All configuration is generated at runtime by `start.sh`. There are no config files to edit manually -- the app reads Cloudron environment variables and writes `config.yaml`, `nginx.conf`, and dashboard config files on each start.
+All configuration is generated at runtime by `start.sh`. There are no config files to edit manually -- the app reads Cloudron environment variables, writes `config.yaml` and `nginx.conf`, and substitutes those values into an ephemeral dashboard export on each start.
 
 ### Database
 
@@ -165,7 +165,6 @@ All persistent data is stored in `/app/data/` (Cloudron's `localstorage` addon) 
 | `/app/data/config/.encryption_key` | Database encryption key (generated on first run, persisted) |
 | `/app/data/config/.auth_secret` | Relay authentication secret (generated on first run, persisted) |
 | `/app/data/netbird/` | Server state and data |
-| `/app/data/dashboard/` | Dashboard OIDC config (`config.json`, `.env`) |
 | `/app/data/.initialized` | First-run marker file |
 
 The encryption key encrypts setup keys and API tokens at rest in PostgreSQL. Both `.encryption_key` and `.auth_secret` are included in Cloudron backups. **Do not lose them** -- losing the encryption key means regenerating all setup keys and API tokens, while losing the auth secret may disrupt relay server authentication.
@@ -239,7 +238,7 @@ checklist below for live-instance qualification.
 - [ ] App survives restart (`cloudron restart --app netbird`)
 - [ ] Backup/restore preserves all state
 - [ ] Memory stays within 512 MB limit
-- [ ] STUN port (UDP 3478) is accessible from clients
+- [ ] Selected STUN UDP port is accessible from clients
 - [ ] (Optional) Cloudron SSO can be added as external IdP via dashboard
 
 ### Repository Automation Dashboard
@@ -270,7 +269,7 @@ cloudron-netbird-app/
 
 ## Known Limitations
 
-1. **STUN port**: UDP 3478 must be directly accessible -- it cannot go through Cloudron's HTTP reverse proxy. Ensure your firewall allows inbound UDP 3478.
+1. **STUN port**: The selected UDP port must be directly accessible -- it cannot go through Cloudron's HTTP reverse proxy. Allow that selected port through your firewall.
 2. **Reverse proxy feature not supported**: NetBird's [Reverse Proxy](https://docs.netbird.io/manage/reverse-proxy) feature requires Traefik with TLS passthrough, which is incompatible with Cloudron's nginx TLS termination. See the [TLS passthrough feature request](https://forum.cloudron.io/topic/15109/tls-passthrough-option-for-apps-requiring-end-to-end-tls) on the Cloudron forum. All core mesh VPN functionality (P2P tunnels, NAT traversal, access control, DNS, routes, dashboard) works normally.
 3. **Single account mode**: All users join the same network. This is appropriate for most self-hosted deployments.
 4. **Not yet tested on a real Cloudron instance**: This package needs real-world validation. See [Contributing](#contributing).

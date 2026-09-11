@@ -13,7 +13,7 @@ Key design decisions:
 1. **Embedded IdP (Dex)** handles initial authentication. The `/setup` page creates the first admin account. No external IdP is required for first-run.
 2. **Cloudron OIDC is optional** and added post-setup via the dashboard UI. This avoids the Catch-22 where you need to log in to configure the IdP you need to log in with.
 3. **config.yaml** (not `management.json`) is used for server configuration. The old `management.json` format is for the legacy multi-container architecture and does not enable the embedded IdP.
-4. **Dashboard static files** are served directly by our nginx. The upstream `netbirdio/dashboard` container has its own nginx that generates runtime config from env vars -- we replicate this by writing `OIDCConfigResponse` directly.
+4. **Dashboard static files** are served directly by our nginx. The upstream `netbirdio/dashboard` container has its own nginx that generates runtime config from env vars -- we replicate its allowlisted `envsubst` pass in an ephemeral dashboard copy under `/run`.
 
 ### What works well with Cloudron
 
@@ -47,7 +47,6 @@ The internal nginx routes traffic from Cloudron's reverse proxy (port 8080) to t
 | `/management.ManagementService/*` | gRPC | `grpc_pass` | HTTP/2 cleartext (h2c) |
 | `/relay*`, `/ws-proxy/*` | WebSocket | `proxy_pass` + Upgrade | Long-lived connections |
 | `/api/*`, `/oauth2/*` | HTTP | `proxy_pass` | REST API + embedded IdP |
-| `/setup` | HTTP | `proxy_pass` | First-run onboarding |
 | `/*` | HTTP | static files | Dashboard catch-all |
 
 **Key gotchas**:
@@ -60,11 +59,11 @@ The internal nginx routes traffic from Cloudron's reverse proxy (port 8080) to t
 
 | Challenge | Solution | Risk |
 |-----------|----------|------|
-| **UDP 3478 (STUN)** | Use `udpPorts` in manifest (NOT `tcpPorts` -- STUN is UDP) | Low -- Cloudron handles port mapping |
+| **Configurable UDP STUN** | Use `udpPorts` without a fixed `containerPort` so NetBird listens on the same port Cloudron exposes | Low -- avoids split listen/advertised ports |
 | **gRPC over HTTP/2** | nginx `grpc_pass` directive with `grpc_socket_keepalive on` | Low -- well-tested pattern |
 | **Combined server binary** | NetBird v0.65+ ships a single `netbird-server` binary | Low -- simplifies packaging |
 | **Embedded IdP** | `config.yaml` with `server.auth.*` enables Dex automatically | Low -- upstream default |
-| **Dashboard config** | Write `OIDCConfigResponse` file that dashboard JS reads | Medium -- replicates dashboard container's nginx behavior |
+| **Dashboard config** | Substitute the pinned dashboard's embedded runtime placeholders under `/run` | Medium -- must track the upstream init contract |
 | **Let's Encrypt** | Not needed -- Cloudron handles TLS termination | None |
 
 ### What needs testing
@@ -72,7 +71,7 @@ The internal nginx routes traffic from Cloudron's reverse proxy (port 8080) to t
 1. **Embedded IdP flow** -- `/setup` page creates admin, `/oauth2/token` issues tokens, dashboard login works
 2. **gRPC routing** -- Signal and Management gRPC connections through nginx `grpc_pass`
 3. **WebSocket routing** -- Relay and ws-proxy connections with proper Upgrade headers
-4. **STUN UDP port** -- Verify Cloudron's `udpPorts` correctly exposes UDP 3478
+4. **STUN UDP port** -- Verify Cloudron's `udpPorts` exposes the selected UDP port
 5. **Client connectivity** -- NetBird clients can connect with setup key and management URL
 6. **Peer-to-peer mesh** -- Peers can communicate through WireGuard tunnels
 7. **NAT traversal** -- Peers behind NAT can connect via the built-in relay

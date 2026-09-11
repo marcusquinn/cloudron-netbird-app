@@ -46,6 +46,7 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 -->
 
 ## Ready
+- [ ] t23 Fix first-run dashboard setup authentication and STUN port mapping #auto-dispatch ~1h ref:GH#114 logged:2026-09-11
 
 <!-- Tasks with no open blockers - run /ready to refresh -->
 

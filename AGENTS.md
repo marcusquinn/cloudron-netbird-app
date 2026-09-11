@@ -30,11 +30,11 @@ The embedded IdP (Dex) provides the `/setup` page for first-run admin account cr
 
 ### STUN port: UDP not TCP
 
-STUN uses UDP. The manifest declares it under `udpPorts`, not `tcpPorts`. This was a bug in v1.x.
+STUN uses UDP. Declare it under `udpPorts`, not `tcpPorts`, and omit a fixed `containerPort`: the combined server uses one value for both its listener and advertised endpoint, so it must listen on Cloudron's selected external port.
 
-### Dashboard config: `OIDCConfigResponse`
+### Dashboard runtime config
 
-The upstream `netbirdio/dashboard` container has its own nginx that generates runtime config from env vars. Since we serve the dashboard static files directly, `start.sh` writes an `OIDCConfigResponse` JSON file to `/app/code/dashboard/` that the dashboard JS reads at load time.
+The exported dashboard embeds environment placeholders in `config.json` and generated assets. Copy the immutable export to `/run/dashboard` and apply the same allowlisted `envsubst` contract as the pinned upstream dashboard init script. Serving unprocessed `/app/code/dashboard` makes the instance-status request fail and incorrectly falls into OIDC login.
 
 ## nginx Routing (Critical)
 
@@ -46,7 +46,6 @@ Must match upstream docs: https://docs.netbird.io/selfhosted/external-reverse-pr
 | `/management.ManagementService/*` | `grpc_pass` | Same |
 | `/relay*`, `/ws-proxy/*` | `proxy_pass` + Upgrade | WebSocket long-lived connections |
 | `/api/*`, `/oauth2/*` | `proxy_pass` | REST API + embedded IdP |
-| `/OIDCConfigResponse` | static file | Dashboard auth config |
 | `/*` | `try_files` | Dashboard SPA (includes `/setup` route) |
 
 Timeouts must be `1d` for gRPC and WebSocket. `grpc_socket_keepalive on` is required.
@@ -57,7 +56,7 @@ Timeouts must be `1d` for gRPC and WebSocket. `grpc_socket_keepalive on` is requ
 |------|---------|
 | `CloudronManifest.json` | Cloudron app metadata, addons (postgresql, localstorage), udpPorts |
 | `Dockerfile` | Downloads netbird-server binary + dashboard static files |
-| `start.sh` | Runtime config generation (config.yaml, nginx.conf, OIDCConfigResponse) |
+| `start.sh` | Server/nginx config plus ephemeral dashboard runtime substitution |
 | `supervisord.conf` | Process management (nginx on 8080, netbird-server on 80) |
 | `PACKAGING-NOTES.md` | Detailed architecture notes, lessons learned, testing plan |
 | `CHANGELOG.md` | Version history with breaking changes documented |
