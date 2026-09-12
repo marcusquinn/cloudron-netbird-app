@@ -35,9 +35,11 @@ NetBird clients connect to this server to join the mesh.
 |----------|---------|
 | Cloudron | v9.1.0+ |
 | Memory | 512 MB (configurable in manifest) |
-| Ports | TCP 80/443 (handled by Cloudron) + one configurable UDP port for STUN (3478 by default) |
+| Ports | TCP 443 plus configurable TCP 33073 and UDP 3478 by default |
 
-**Important**: The selected STUN UDP port must be accessible from all NetBird clients for NAT traversal. Cloudron maps the same selected port inside and outside the container.
+**Important**: Keep both selected NetBird ports accessible from clients. Cloudron
+maps the external native TCP port to container port 33074. NetBird listens
+directly on the selected STUN UDP port.
 
 ## Installation
 
@@ -79,7 +81,7 @@ curl -fsSL https://pkgs.netbird.io/install.sh | sh
 # Connect to your self-hosted management server
 sudo netbird up \
   --setup-key YOUR_SETUP_KEY \
-  --management-url https://netbird.your-cloudron.example
+  --management-url https://netbird.your-cloudron.example:33073
 ```
 
 The `/setup` page is only accessible when no users exist. After creating the first user, it redirects to the regular login page.
@@ -109,28 +111,20 @@ The manifest sets `optionalSso: true`, so Cloudron shows an "Enable SSO" toggle 
 
 ```text
 Cloudron Server
-+-------------------------------------------------------+
-|  Cloudron nginx (TLS termination, port 443)            |
-|    |                                                   |
-|    v                                                   |
-|  +---------------------------------------------------+ |
-|  | App Container (this package)                       | |
-|  |                                                    | |
-|  |  nginx :8080 (internal reverse proxy)              | |
-|  |    |-- /signalexchange/  -> gRPC :80 (grpc_pass)   | |
-|  |    |-- /management/      -> gRPC :80 (grpc_pass)   | |
-|  |    |-- /relay, /ws-proxy -> WebSocket :80           | |
-|  |    |-- /api, /oauth2     -> HTTP :80                | |
-|  |    |-- /* (incl /setup)  -> dashboard (static SPA)  | |
-|  |                                                    | |
-|  |  netbird-server :80 (combined binary)              | |
-|  |    Management + Signal + Relay + embedded IdP      | |
-|  |    STUN :selected UDP port (exposed directly)      | |
-|  |                                                    | |
-|  +---------------------------------------------------+ |
-|                                                        |
-|  PostgreSQL addon (Cloudron-managed)                   |
-+-------------------------------------------------------+
++----------------------------------------------------------+
+| Cloudron HTTPS :443 -> nginx :8080                       |
+|   dashboard, REST API, embedded IdP                      |
+|                                                          |
+| selected TCP port -> nginx :33074 (Cloudron TLS cert)    |
+|   native HTTP/2 gRPC + relay/WebSocket                   |
+|                          |                               |
+|                          v                               |
+|                 netbird-server :80                       |
+|          Management + Signal + Relay + embedded IdP      |
+|                                                          |
+| selected UDP port -> embedded STUN                       |
+| PostgreSQL addon -> persistent application data          |
++----------------------------------------------------------+
 ```
 
 ## Configuration
@@ -206,14 +200,17 @@ python3 test/runtime-smoke.py --image netbird-smoke:candidate
 ```
 
 The runner never pulls a candidate automatically. It uses disposable labeled
-containers, a network, and an application-data volume, with no published host
-ports or TTY. Both containers are limited to 512 MB and two CPUs. The app has a
-read-only root filesystem and writable `/run`, `/tmp`, and `/app/data`.
+containers, a network, application-data and certificate fixture volumes, with no
+published host ports or TTY. Runtime containers are limited to 512 MB and two
+CPUs. The app has a read-only root filesystem and writable `/run`, `/tmp`, and
+`/app/data`.
 Outbound access is needed for NetBird's geolocation database download.
 
 Fresh startup and restart must pass the manifest health check, setup/config
-requests, stable parent/child UID checks, database initialization, and persisted
-secret/data checks. Raw logs, credentials, and secret fingerprints are withheld.
+requests, dedicated TLS listener and HTTP/2 negotiation checks, stable
+parent/child UID checks, database initialization, and persisted secret/data
+checks. Raw logs,
+credentials, and secret fingerprints are withheld.
 The default test deadline is 180 seconds (`--timeout` adjusts it), plus up to 60
 seconds for ownership-checked cleanup on success, failure, or SIGINT/SIGTERM.
 Cleanup failures print the exact owned resource names and label to inspect;
@@ -230,10 +227,10 @@ checklist below for live-instance qualification.
 - [ ] Admin account creation works via setup page
 - [ ] Login with created credentials works
 - [ ] Setup key creation works in dashboard
-- [ ] Client connects with setup key and management URL
+- [ ] Client connects with a setup key and selected TCP management port
 - [ ] Peers can ping each other through the mesh
 - [ ] Peers behind NAT connect via relay
-- [ ] gRPC connections work (signal + management)
+- [ ] Native HTTP/2 gRPC works on the dedicated port (signal + management)
 - [ ] WebSocket connections work (relay + ws-proxy)
 - [ ] App survives restart (`cloudron restart --app netbird`)
 - [ ] Backup/restore preserves all state
@@ -269,10 +266,22 @@ cloudron-netbird-app/
 
 ## Known Limitations
 
-1. **STUN port**: The selected UDP port must be directly accessible -- it cannot go through Cloudron's HTTP reverse proxy. Allow that selected port through your firewall.
-2. **Reverse proxy feature not supported**: NetBird's [Reverse Proxy](https://docs.netbird.io/manage/reverse-proxy) feature requires Traefik with TLS passthrough, which is incompatible with Cloudron's nginx TLS termination. See the [TLS passthrough feature request](https://forum.cloudron.io/topic/15109/tls-passthrough-option-for-apps-requiring-end-to-end-tls) on the Cloudron forum. All core mesh VPN functionality (P2P tunnels, NAT traversal, access control, DNS, routes, dashboard) works normally.
-3. **Single account mode**: All users join the same network. This is appropriate for most self-hosted deployments.
-4. **Not yet tested on a real Cloudron instance**: This package needs real-world validation. See [Contributing](#contributing).
+1. **Native client port**: Clients must include the selected TCP port in
+   `--management-url`. The normal app URL remains the dashboard and REST API.
+2. **STUN port**: The selected UDP port must be directly accessible. Cloudron
+   TURN cannot replace NetBird's embedded relay/STUN because its shared-secret
+   credentials do not map to NetBird's static external-server configuration.
+3. **Reverse Proxy clusters are not supported**: NetBird's [Reverse
+   Proxy](https://docs.netbird.io/manage/reverse-proxy) component must terminate
+   TLS for public service domains on port 443. Cloudron owns host port 443 and
+   does not provide per-app TLS passthrough. See the [TLS passthrough feature
+   request](https://forum.cloudron.io/topic/15109/tls-passthrough-option-for-apps-requiring-end-to-end-tls).
+   Core mesh VPN functionality remains available.
+4. **Single account mode**: All users join the same network. This suits most
+   self-hosted deployments.
+5. **Live qualification remains in progress**: Community testing has verified
+   first-run setup and dashboard login. The dedicated native transport still
+   needs confirmation on a real Cloudron instance.
 
 ## Upstream
 
@@ -288,7 +297,8 @@ Contributions are welcome. The main areas that need work:
 
 1. **Testing on a real Cloudron instance** -- the packaging needs real-world validation
 2. **Auth flow testing** -- verify the embedded IdP setup page and login work end-to-end
-3. **gRPC/WebSocket testing** -- verify signal and management connections work through the nginx proxy
+3. **gRPC/WebSocket testing** -- verify signal, management, and relay on the
+   dedicated TLS port
 4. **App Store submission** -- once tested, submit to the [Cloudron App Store](https://docs.cloudron.io/packaging/publishing/)
 
 ### Submitting to the Cloudron App Store

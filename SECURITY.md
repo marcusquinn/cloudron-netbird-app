@@ -4,6 +4,7 @@
 
 | App Version | Upstream NetBird | Supported  |
 |-------------|------------------|-----------:|
+| 2.0.16      | 0.78.1           | Yes        |
 | 2.0.15      | 0.78.1           | Yes        |
 | 2.0.14      | 0.78.1           | Yes        |
 | 2.0.13      | 0.77.1           | Yes        |
@@ -53,6 +54,8 @@ This package implements the following security measures:
   first run and persisted in `/app/data/config/` (not in the image)
 - **nginx hardening**: Security headers (X-Frame-Options,
   X-Content-Type-Options, etc.) are set in the nginx config
+- **Native transport TLS**: Cloudron-managed certificates terminate the
+  dedicated HTTP/2 client listener and renewals restart the app automatically
 - **Non-root nginx**: nginx worker processes run as the `cloudron` user
 - **PostgreSQL connection encryption**: Database connections use
   `sslmode=prefer` (opportunistic TLS), encrypting the connection when the

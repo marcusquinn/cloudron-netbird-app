@@ -28,8 +28,8 @@ COPY supervisord.conf /app/code/supervisord.conf
 COPY start.sh /app/code/start.sh
 RUN chmod +x /app/code/start.sh
 
-# Expose HTTP port (Cloudron's reverse proxy handles TLS)
-EXPOSE 8080
+# Expose dashboard/API HTTP plus the dedicated native TLS transport.
+EXPOSE 8080 33074
 
 # Expose STUN UDP port
 EXPOSE 3478/udp
