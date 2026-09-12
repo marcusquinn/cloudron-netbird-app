@@ -84,7 +84,6 @@ t022,Add keyless provenance for Cloudron catalogs,,,,,,backlog
 
 - [ ] t022 Add keyless provenance for Cloudron catalogs ref:GH#74
 
-
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
@@ -99,6 +98,7 @@ t022,Add keyless provenance for Cloudron catalogs,,,,,,backlog
 
 ## Done
 
+<!-- markdownlint-disable-next-line MD013 -->
 - [x] t24 Fix NetBird native client transport on Cloudron #bug #priority:high ref:GH#121 pr:#122 testing:runtime-verified completed:2026-09-12
 - [x] t23 Fix first-run dashboard setup authentication and STUN port mapping #auto-dispatch ~1h ref:GH#114 logged:2026-09-11 pr:#115 testing:runtime-verified completed:2026-09-11
 <!--TOON:done[10]{id,desc,owner,tags,est,actual,logged,started,completed,status}:
