@@ -75,6 +75,8 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 - [ ] t022 Add keyless provenance for Cloudron catalogs ref:GH#74
 
+- [ ] t24 Fix NetBird native client transport on Cloudron #bug #priority:high ref:GH#121
+
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
