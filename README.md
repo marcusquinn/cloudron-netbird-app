@@ -78,7 +78,8 @@ Not yet available. See [Contributing](#contributing) if you'd like to help get i
 # Install client
 curl -fsSL https://pkgs.netbird.io/install.sh | sh
 
-# Connect to your self-hosted management server
+# Connect to your self-hosted management server.
+# Port 33073 is the default; replace it if Cloudron assigned another TCP port.
 sudo netbird up \
   --setup-key YOUR_SETUP_KEY \
   --management-url https://netbird.your-cloudron.example:33073

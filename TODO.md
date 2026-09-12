@@ -42,7 +42,7 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 - `risk:high` - Engaged: stay present, test thoroughly, potential regressions
 
 <!--TOON:meta{version,format,updated}:
-1.1,todo-md+toon,2026-03-01
+1.1,todo-md+toon,2026-09-12
 -->
 
 ## Ready
@@ -54,7 +54,16 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 ## Backlog
 
-<!--TOON:backlog[0]{id,desc,owner,tags,est,risk,logged,status}:
+<!--TOON:backlog[9]{id,desc,owner,tags,est,risk,logged,status}:
+t012,Prepare NetBird community package publishing,,,,,,backlog
+t013,Publish NetBird 2.0.2 Cloudron catalog,,,,,,backlog
+t016,Restore Cloudron 9.2 compatibility,,,,,,backlog
+t017,Publish NetBird 2.0.4 Cloudron catalog,,,,,,backlog
+t018,Fix NetBird 2.0.4 release changelog validation,,,,,,backlog
+t019,Repair historical catalog entry for Cloudron 9.2,,bug,,,,backlog
+t020,Automate Cloudron releases after package updates merge,,feat priority:high,,,,backlog
+t021,Restore release publication after attestation permission failure,,bug priority:high,,,,backlog
+t022,Add keyless provenance for Cloudron catalogs,,,,,,backlog
 -->
 
 - [ ] t012 Prepare NetBird community package publishing ref:GH#43
@@ -75,8 +84,6 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 - [ ] t022 Add keyless provenance for Cloudron catalogs ref:GH#74
 
-- [ ] t24 Fix NetBird native client transport on Cloudron #bug #priority:high ref:GH#121
-
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:
@@ -91,8 +98,12 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 ## Done
 
+<!-- markdownlint-disable-next-line MD013 -->
+- [x] t24 Fix NetBird native client transport on Cloudron #bug #priority:high ref:GH#121 pr:#122 testing:runtime-verified completed:2026-09-12
 - [x] t23 Fix first-run dashboard setup authentication and STUN port mapping #auto-dispatch ~1h ref:GH#114 logged:2026-09-11 pr:#115 testing:runtime-verified completed:2026-09-11
-<!--TOON:done[7]{id,desc,owner,tags,est,actual,logged,started,completed,status}:
+<!--TOON:done[10]{id,desc,owner,tags,est,actual,logged,started,completed,status}:
+t24,Fix NetBird native client transport on Cloudron,,bug priority:high,,,,,2026-09-12,done
+t23,Fix first-run dashboard setup authentication and STUN port mapping,,auto-dispatch,~1h,,2026-09-11,,2026-09-11,done
 t004,Audit README.md — ensure version references current and install instructions accurate and configuration options complete and screenshots/examples up to date,marcus,docs audit,~30m,~30m,2026-03-01,,2026-03-01,done
 t005,Fix unused FIRST_RUN variable (ShellCheck SC2034),marcus,quality shellcheck,~15m,~15m,2026-03-01,,2026-03-01,done
 t006,Add nginx security headers and run nginx as non-root,marcus,security,~30m,~30m,2026-03-01,2026-03-01,2026-03-01,done
@@ -128,5 +139,5 @@ t011,Fix quality-debt in SECURITY.md from PR #28 review feedback,marcus,quality-
 <!--/TOON:subtasks-->
 
 <!--TOON:summary{total,ready,pending,in_progress,in_review,done,declined,total_est,total_actual}:
-8,0,0,1,0,7,0,~155m,~135m
+19,0,9,0,0,10,0,~215m,~155m
 -->
