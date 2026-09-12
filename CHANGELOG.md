@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.16] - 2026-09-12
+
+- Added a dedicated Cloudron TCP port with the `tls` addon so native NetBird
+  clients retain end-to-end HTTP/2 for management and signal gRPC.
+- Kept dashboard, REST API, and embedded IdP traffic on the normal Cloudron app
+  URL while advertising the selected native port for signal and relay traffic.
+- Added runtime coverage for the TLS certificate fixture, selected external port,
+  fixed container listener, certificate verification, and HTTP/2 negotiation.
+- Clarified that Cloudron TURN uses an incompatible shared-secret credential model
+  and that NetBird Reverse Proxy clusters still require public TLS passthrough.
+
 ## [2.0.15] - 2026-09-11
 
 - Fixed fresh installs falling into an unauthenticated OIDC login by applying the

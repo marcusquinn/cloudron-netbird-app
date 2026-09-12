@@ -18,8 +18,10 @@ validate_env() {
         "CLOUDRON_POSTGRESQL_PASSWORD"
         "CLOUDRON_POSTGRESQL_DATABASE"
         "CLOUDRON_POSTGRESQL_PORT"
+        "NETBIRD_PORT"
     )
     local errors=()
+    local cert_file
     local var
 
     # Collect all missing required variables
@@ -38,6 +40,19 @@ validate_env() {
             errors+=("CLOUDRON_POSTGRESQL_PORT must be an integer between 1 and 65535 (got: '${CLOUDRON_POSTGRESQL_PORT}').")
         fi
     fi
+
+    if [[ -n "${NETBIRD_PORT:-}" ]]; then
+        if ! [[ "${NETBIRD_PORT}" =~ ^[0-9]+$ ]] ||
+            ((NETBIRD_PORT < 1 || NETBIRD_PORT > 65535)); then
+            errors+=("NETBIRD_PORT must be an integer between 1 and 65535 (got: '${NETBIRD_PORT}').")
+        fi
+    fi
+
+    for cert_file in /etc/certs/tls_cert.pem /etc/certs/tls_key.pem; do
+        if [[ ! -s "${cert_file}" ]]; then
+            errors+=("Required TLS addon file '${cert_file}' is missing or empty.")
+        fi
+    done
 
     if [[ ${#errors[@]} -gt 0 ]]; then
         echo "ERROR: Environment validation failed with ${#errors[@]} error(s):" >&2
@@ -125,6 +140,7 @@ AUTH_SECRET=$(cat /app/data/config/.auth_secret)
 echo "==> Generating NetBird configuration"
 
 NETBIRD_DOMAIN="${CLOUDRON_APP_DOMAIN}"
+NETBIRD_NATIVE_PORT="${NETBIRD_PORT}"
 
 # ============================================
 # PHASE 4a: config.yaml (Combined Server)
@@ -146,7 +162,7 @@ PG_DSN="host=${CLOUDRON_POSTGRESQL_HOST} user=${CLOUDRON_POSTGRESQL_USERNAME} pa
 cat >/app/data/config/config.yaml <<CONFIG_EOF
 server:
   listenAddress: ":80"
-  exposedAddress: "https://${NETBIRD_DOMAIN}:443"
+  exposedAddress: "https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"
   stunPorts:
     - ${STUN_PORT:-3478}
   metricsPort: 9090
@@ -189,7 +205,7 @@ export AUTH_CLIENT_ID="netbird-dashboard"
 export AUTH_CLIENT_SECRET=""
 export AUTH_SUPPORTED_SCOPES="openid profile email groups"
 export NETBIRD_MGMT_API_ENDPOINT="https://${NETBIRD_DOMAIN}"
-export NETBIRD_MGMT_GRPC_API_ENDPOINT="https://${NETBIRD_DOMAIN}"
+export NETBIRD_MGMT_GRPC_API_ENDPOINT="https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"
 export AUTH_REDIRECT_URI="/nb-auth"
 export AUTH_SILENT_REDIRECT_URI="/nb-silent-auth"
 export NETBIRD_TOKEN_SOURCE="accessToken"
@@ -219,9 +235,10 @@ done
 
 # PHASE 4d: nginx Configuration
 # ============================================
-# This nginx sits between Cloudron's reverse proxy (which terminates TLS)
-# and the netbird-server (which listens on port 80 internally).
-# Cloudron sends HTTP to our port 8080, we route to the right backend.
+# This nginx exposes two frontends for the server listening on port 80:
+# - port 8080 receives dashboard/API HTTP from Cloudron's HTTPS proxy
+# - port 33073 terminates TLS directly for native HTTP/2 gRPC and relay traffic
+# The fixed container port must match tcpPorts.NETBIRD_PORT.containerPort.
 #
 # Key routing from upstream docs:
 # - gRPC paths need grpc_pass (nginx handles h2c natively with grpc_pass)
@@ -264,7 +281,12 @@ http {
 
     server {
         listen 8080;
+        listen 33073 ssl http2;
         server_name _;
+
+        ssl_certificate /etc/certs/tls_cert.pem;
+        ssl_certificate_key /etc/certs/tls_key.pem;
+        ssl_protocols TLSv1.2 TLSv1.3;
 
         # Security headers
         add_header X-Frame-Options "SAMEORIGIN" always;

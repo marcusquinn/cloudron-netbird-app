@@ -33,7 +33,7 @@ assert_precedes() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.0.15" and .upstreamVersion == "0.78.1" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.0.16" and .upstreamVersion == "0.78.1" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/PUBLISHING.md" ]] || fail "PUBLISHING.md is missing" || return 1
@@ -41,9 +41,9 @@ main() {
 	[[ -f "${ROOT_DIR}/media/hero.png" ]] || fail "media/hero.png is missing" || return 1
 	jq -e '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Version catalog contract failed" || return 1
 	jq -e '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Historical catalog entries must not use Cloudron-10-only packageUrl" || return 1
-	assert_contains CHANGELOG '[2.0.15]' || return 1
-	assert_contains CHANGELOG.md '[2.0.15] - 2026-09-11' || return 1
-	assert_contains SECURITY.md '| 2.0.15      | 0.78.1           | Yes        |' || return 1
+	assert_contains CHANGELOG '[2.0.16]' || return 1
+	assert_contains CHANGELOG.md '[2.0.16] - 2026-09-12' || return 1
+	assert_contains SECURITY.md '| 2.0.16      | 0.78.1           | Yes        |' || return 1
 	assert_contains README.md '| Cloudron | v9.1.0+ |' || return 1
 	assert_contains PUBLISHING.md 'is standing authorization for the managed publication' || return 1
 	assert_contains PUBLISHING.md 'ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
@@ -54,6 +54,7 @@ main() {
 	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
 	assert_contains Dockerfile 'gettext-base' || return 1
 	jq -e '.udpPorts.STUN_PORT.containerPort == null' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "STUN must use the selected external port inside the container" || return 1
+	jq -e '.addons.tls == {} and .tcpPorts.NETBIRD_PORT.defaultValue == 33073 and .tcpPorts.NETBIRD_PORT.containerPort == 33073 and .tcpPorts.NETBIRD_PORT.enabledByDefault == true' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Native client transport must use the Cloudron TLS addon and dedicated container port" || return 1
 	assert_contains start.sh 'cp -a /app/code/dashboard/. /run/dashboard/' || return 1
 	assert_contains start.sh 'envsubst "' || return 1
 	assert_contains start.sh 'grep -RIlZ -- "AUTH_SUPPORTED_SCOPES" /run/dashboard' || return 1
@@ -65,6 +66,11 @@ main() {
 	assert_contains start.sh "try_files \$uri.html \$uri \$uri/ /index.html;" || return 1
 	assert_contains start.sh "rewrite ^(.+)/\$ \$1 last;" || return 1
 	assert_contains start.sh 'listen 8080;' || return 1
+	assert_contains start.sh 'listen 33073 ssl http2;' || return 1
+	assert_contains start.sh 'ssl_certificate /etc/certs/tls_cert.pem;' || return 1
+	# shellcheck disable=SC2016 # Assert the generated-script placeholders literally.
+	assert_contains start.sh 'exposedAddress: "https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"' || return 1
+	assert_contains Dockerfile 'EXPOSE 8080 33073' || return 1
 	assert_contains start.sh 'openssl rand -base64 32' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'platforms: linux/amd64' || return 1
 	assert_contains Dockerfile 'COPY --from=server /go/bin/netbird-server /app/code/bin/netbird-server' || return 1

@@ -1,3 +1,8 @@
+[2.0.16]
+* Add a dedicated TLS-enabled TCP port for native NetBird management, signal, and relay traffic.
+* Keep the dashboard and REST API on Cloudron HTTPS while advertising the selected native client port.
+* Document that Cloudron TURN cannot replace NetBird relay authentication and that Reverse Proxy clusters still require public TLS passthrough.
+
 [2.0.15]
 * Fix fresh installs falling into unauthenticated login instead of initial owner setup.
 * Fix custom STUN ports by using the selected UDP port for both Cloudron exposure and the NetBird listener.

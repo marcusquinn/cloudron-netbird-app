@@ -34,7 +34,9 @@ class SmokeCheck:
         self.network = self.prefix + "-net"
         self.database = self.prefix + "-db"
         self.app = self.prefix + "-app"
+        self.certificate_helper = self.prefix + "-cert"
         self.volume = self.prefix + "-data"
+        self.certificate_volume = self.prefix + "-certs"
         self.resources = []
         self.owner_email = "owner-" + secrets.token_hex(6) + "@example.invalid"
         self.owner_password = "Smoke-" + self.owner[-24:]
@@ -93,17 +95,34 @@ class SmokeCheck:
                 self.image = json.loads(result[1])[0]["Id"]
         manifest = json.loads((Path(__file__).resolve().parents[1] / "CloudronManifest.json").read_text())
         self.port = manifest["httpPort"]
+        self.native_container_port = manifest["tcpPorts"]["NETBIRD_PORT"]["containerPort"]
+        self.native_external_port = 34443
         self.health_path = manifest["healthCheckPath"]
         if not isinstance(self.port, int) or not 1 <= self.port <= 65535:
             raise SmokeError("invalid manifest HTTP port")
         if not isinstance(self.health_path, str) or not self.health_path.startswith("/"):
             raise SmokeError("invalid manifest health path")
+        if self.native_container_port != 33073:
+            raise SmokeError("invalid manifest native client container port")
 
     def start(self):
         self.stage = "database startup"
         # Outbound access is needed for NetBird's geolocation bootstrap download.
         self.create("network", self.network)
         self.create("volume", self.volume)
+        self.create("volume", self.certificate_volume)
+        certificate_command = (
+            "openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=" + DOMAIN
+            + " -addext subjectAltName=DNS:" + DOMAIN
+            + " -keyout /certs/tls_key.pem -out /certs/tls_cert.pem"
+            + " && chmod 0644 /certs/tls_cert.pem /certs/tls_key.pem"
+        )
+        self.create(
+            "container", self.certificate_helper,
+            "--mount", "type=volume,source=" + self.certificate_volume + ",target=/certs",
+            self.image, "bash", "-c", certificate_command,
+        )
+        self.command("start", "--attach", self.certificate_helper)
         self.create(
             "container", self.database, "--network", self.network,
             "--memory", "512m", "--cpus", "2", "--tmpfs", "/var/lib/postgresql/data",
@@ -117,14 +136,17 @@ class SmokeCheck:
         self.stage = "fresh application startup"
         self.create(
             "container", self.app, "--platform", "linux/amd64", "--network", self.network,
+            "--network-alias", DOMAIN,
             "--read-only", "--tmpfs", "/run", "--tmpfs", "/tmp", "--memory", "512m", "--cpus", "2",
             "--mount", "type=volume,source=" + self.volume + ",target=/app/data",
+            "--mount", "type=volume,source=" + self.certificate_volume + ",target=/etc/certs,readonly",
             "--env", "CLOUDRON_APP_DOMAIN=" + DOMAIN,
             "--env", "CLOUDRON_POSTGRESQL_HOST=" + self.database,
             "--env", "CLOUDRON_POSTGRESQL_USERNAME=netbird",
             "--env", "CLOUDRON_POSTGRESQL_PASSWORD",
             "--env", "CLOUDRON_POSTGRESQL_DATABASE=netbird",
             "--env", "CLOUDRON_POSTGRESQL_PORT=5432",
+            "--env", "NETBIRD_PORT=" + str(self.native_external_port),
             "--env", "STUN_PORT=5349", self.image,
             environment=dict(os.environ, CLOUDRON_POSTGRESQL_PASSWORD=self.password),
         )
@@ -180,6 +202,31 @@ class SmokeCheck:
         if sockets[0] != 0 or ":5349" not in sockets[1]:
             raise SmokeError("NetBird is not listening on the selected STUN UDP port")
 
+    def native_tls_listener(self):
+        expected = (
+            'exposedAddress: "https://' + DOMAIN + ":"
+            + str(self.native_external_port) + '"'
+        )
+        config = self.command("exec", self.app, "grep", "-F", expected,
+                              "/app/data/config/config.yaml", check=False)
+        if config[0] != 0:
+            raise SmokeError("selected native client port missing from generated config")
+        sockets = self.command("exec", self.app, "ss", "-H", "-ltn", check=False)
+        if sockets[0] != 0 or ":" + str(self.native_container_port) not in sockets[1]:
+            raise SmokeError("nginx is not listening on the native client TLS port")
+        endpoint = "https://" + DOMAIN + ":" + str(self.native_container_port) + "/api/instance"
+        response = self.command(
+            "exec", self.app, "curl", "-fsSL", "--http2", "--max-time", "2",
+            "--resolve", DOMAIN + ":" + str(self.native_container_port) + ":127.0.0.1",
+            "--cacert", "/etc/certs/tls_cert.pem",
+            "--write-out", "\n%{http_version}\n%{http_code}", endpoint, check=False,
+        )
+        if response[0] != 0:
+            raise SmokeError("native client TLS endpoint request failed")
+        _, protocol, status = response[1].rsplit("\n", 2)
+        if protocol != "2" or status != "200":
+            raise SmokeError("native client endpoint did not negotiate verified HTTP/2 TLS")
+
     def processes(self):
         expected_uid = self.command("exec", self.app, "id", "-u", "cloudron")[1].strip()
         if not expected_uid.isdecimal() or expected_uid == "0":
@@ -208,6 +255,7 @@ class SmokeCheck:
             raise SmokeError("instance setup state mismatch")
         self.dashboard_runtime_config()
         self.stun_listener()
+        self.native_tls_listener()
         before = self.processes()
         time.sleep(min(3, max(0, self.deadline - time.monotonic())))
         if self.processes() != before or self.http(self.health_path)[0]:
