@@ -14,13 +14,19 @@ Key design decisions:
 2. **Cloudron OIDC is optional** and added post-setup via the dashboard UI. This avoids the Catch-22 where you need to log in to configure the IdP you need to log in with.
 3. **config.yaml** (not `management.json`) is used for server configuration. The old `management.json` format is for the legacy multi-container architecture and does not enable the embedded IdP.
 4. **Dashboard static files** are served directly by our nginx. The upstream `netbirdio/dashboard` container has its own nginx that generates runtime config from env vars -- we replicate its allowlisted `envsubst` pass in an ephemeral dashboard copy under `/run`.
-5. **Native clients use a dedicated TLS port** because Cloudron's standard app proxy terminates TLS without preserving native HTTP/2 gRPC to the container. nginx listens on fixed container port 33074 using the `tls` addon, while `server.exposedAddress` advertises the selected external `NETBIRD_PORT`. Port 33073 cannot be used inside the container because NetBird v0.78.1 reserves it for its backward-compatibility gRPC listener.
+5. **Native clients use a dedicated TLS port** because Cloudron's standard app
+   proxy does not preserve native HTTP/2 gRPC. nginx listens on fixed container
+   port 33074 using the `tls` addon. `server.exposedAddress` advertises the
+   selected external `NETBIRD_PORT`. NetBird reserves container port 33073 for
+   its backward-compatibility gRPC listener.
 
 ### What works well with Cloudron
 
 1. **PostgreSQL addon** -- NetBird supports PostgreSQL natively, Cloudron provides it as an addon
-2. **Split web/native transport** -- Dashboard, REST API, and OIDC use Cloudron HTTPS; native gRPC and relay traffic use a dedicated TLS port
-3. **Single domain** -- Both listeners use the app domain, with clients including the selected native port
+2. **Split web/native transport** -- Dashboard, REST API, and OIDC use Cloudron
+   HTTPS. Native gRPC and relay traffic use a dedicated TLS port.
+3. **Single domain** -- Both listeners use the app domain. Clients include the
+   selected native port.
 4. **Docker-based** -- NetBird provides pre-built binaries and Docker images
 5. **Supervisord** -- Multi-process pattern (nginx + netbird-server) is well-supported by Cloudron
 
@@ -30,7 +36,7 @@ Key design decisions:
 |-------|---------|-------------------|
 | `postgresql` | Database | `CLOUDRON_POSTGRESQL_*` env vars -> `server.store.dsn` in config.yaml |
 | `localstorage` | Persistent data | `/app/data/` for config, encryption key, auth secret |
-| `tls` | Certificate for native protocols | `/etc/certs/tls_cert.pem` and `tls_key.pem` on nginx port 33074 |
+| `tls` | Native TLS certificate | Cloudron certificate files on nginx port 33074 |
 
 ### Addons NOT used (and why)
 
@@ -41,7 +47,10 @@ Key design decisions:
 
 ### nginx routing (critical)
 
-The internal nginx accepts Cloudron-proxied HTTP on port 8080 and direct TLS/HTTP2 on fixed container port 33074, then routes both listeners to the combined server on port 80. The native listener routing must match the [upstream nginx configuration](https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-combined):
+The internal nginx accepts Cloudron-proxied HTTP on port 8080 and direct
+TLS/HTTP2 on fixed container port 33074. Both listeners route to the combined
+server on port 80. Native routing must match the [upstream nginx
+configuration](https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-combined):
 
 | Path | Protocol | nginx directive | Notes |
 |------|----------|----------------|-------|
@@ -71,10 +80,12 @@ The internal nginx accepts Cloudron-proxied HTTP on port 8080 and direct TLS/HTT
 ### What needs testing
 
 1. **Embedded IdP flow** -- `/setup` page creates admin, `/oauth2/token` issues tokens, dashboard login works
-2. **gRPC routing** -- Signal and Management connections negotiate HTTP/2 on the dedicated TLS port and pass through nginx `grpc_pass`
+2. **gRPC routing** -- Signal and Management negotiate HTTP/2 on the dedicated
+   TLS port and pass through nginx `grpc_pass`.
 3. **WebSocket routing** -- Relay and ws-proxy connections with proper Upgrade headers
 4. **STUN UDP port** -- Verify Cloudron's `udpPorts` exposes the selected UDP port
-5. **Client connectivity** -- NetBird clients can connect with a setup key and `https://<app-domain>:<NETBIRD_PORT>`
+5. **Client connectivity** -- Clients connect with a setup key and
+   `https://<app-domain>:<NETBIRD_PORT>`.
 6. **Peer-to-peer mesh** -- Peers can communicate through WireGuard tunnels
 7. **NAT traversal** -- Peers behind NAT can connect via the built-in relay
 8. **Backup/restore** -- PostgreSQL + `/app/data/` backup captures all state
@@ -91,14 +102,17 @@ The v1.x packaging had several critical issues identified by tester `timconsidin
 4. **STUN as TCP**: STUN uses UDP. Declaring it under `tcpPorts` wouldn't expose UDP traffic.
 5. **Missing dashboard config**: The dashboard JS needs `AUTH_AUDIENCE`, `AUTH_CLIENT_ID`, `AUTH_AUTHORITY`, etc. -- not just the API endpoint.
 6. **Missing WebSocket routes**: `/ws-proxy/` paths were not routed at all.
-7. **Cloudron 443 transport assumption**: native NetBird clients use gRPC over HTTP/2, while Cloudron's normal app proxy does not preserve that transport to the container. A dedicated TCP port plus the `tls` addon is required.
+7. **Cloudron 443 transport assumption**: native clients use gRPC over HTTP/2,
+   which Cloudron's normal app proxy does not preserve. A dedicated TCP port
+   plus the `tls` addon is required.
 
 ### Future enhancements
 
 1. **Cloudron OIDC auto-configuration** -- Explore using the NetBird API to auto-register Cloudron as an IdP after first admin login
 2. **LDAP addon** -- Sync Cloudron users to NetBird groups
 3. **JWT group sync** -- Map Cloudron groups to NetBird access control groups automatically
-4. **Live client smoke coverage** -- Automate setup-key creation and a real NetBird client registration when a safe fixture is available
+4. **Live client smoke coverage** -- Automate setup-key creation and real client
+   registration when a safe fixture is available.
 
 ### Publishing to Cloudron App Store
 

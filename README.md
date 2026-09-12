@@ -35,9 +35,11 @@ NetBird clients connect to this server to join the mesh.
 |----------|---------|
 | Cloudron | v9.1.0+ |
 | Memory | 512 MB (configurable in manifest) |
-| Ports | TCP 443 for web, one configurable TCP client port (33073 by default), and one configurable UDP STUN port (3478 by default) |
+| Ports | TCP 443 plus configurable TCP 33073 and UDP 3478 by default |
 
-**Important**: Keep both selected NetBird ports accessible from clients. Cloudron maps the external native TCP port to container port 33074; NetBird listens directly on the selected STUN UDP port.
+**Important**: Keep both selected NetBird ports accessible from clients. Cloudron
+maps the external native TCP port to container port 33074. NetBird listens
+directly on the selected STUN UDP port.
 
 ## Installation
 
@@ -205,8 +207,9 @@ CPUs. The app has a read-only root filesystem and writable `/run`, `/tmp`, and
 Outbound access is needed for NetBird's geolocation database download.
 
 Fresh startup and restart must pass the manifest health check, setup/config
-requests, dedicated TLS listener and HTTP/2 negotiation checks, stable parent/child
-UID checks, database initialization, and persisted secret/data checks. Raw logs,
+requests, dedicated TLS listener and HTTP/2 negotiation checks, stable
+parent/child UID checks, database initialization, and persisted secret/data
+checks. Raw logs,
 credentials, and secret fingerprints are withheld.
 The default test deadline is 180 seconds (`--timeout` adjusts it), plus up to 60
 seconds for ownership-checked cleanup on success, failure, or SIGINT/SIGTERM.
@@ -224,10 +227,10 @@ checklist below for live-instance qualification.
 - [ ] Admin account creation works via setup page
 - [ ] Login with created credentials works
 - [ ] Setup key creation works in dashboard
-- [ ] Client connects with setup key and the selected TCP port in the management URL
+- [ ] Client connects with a setup key and selected TCP management port
 - [ ] Peers can ping each other through the mesh
 - [ ] Peers behind NAT connect via relay
-- [ ] Native HTTP/2 gRPC connections work through the dedicated TLS port (signal + management)
+- [ ] Native HTTP/2 gRPC works on the dedicated port (signal + management)
 - [ ] WebSocket connections work (relay + ws-proxy)
 - [ ] App survives restart (`cloudron restart --app netbird`)
 - [ ] Backup/restore preserves all state
@@ -263,11 +266,22 @@ cloudron-netbird-app/
 
 ## Known Limitations
 
-1. **Native client port**: Clients must include the selected TCP port in `--management-url`; Cloudron's normal app URL is retained for the dashboard and REST API.
-2. **STUN port**: The selected UDP port must be directly accessible. The Cloudron TURN addon cannot replace NetBird's embedded relay/STUN because its shared-secret credential model does not map to NetBird's static external-server configuration.
-3. **Reverse Proxy clusters are not supported**: NetBird's [Reverse Proxy](https://docs.netbird.io/manage/reverse-proxy) component must terminate TLS for arbitrary public service domains on port 443. Cloudron owns host port 443 and does not provide per-app TLS passthrough, so the dedicated client port does not make this feature possible. See the [TLS passthrough feature request](https://forum.cloudron.io/topic/15109/tls-passthrough-option-for-apps-requiring-end-to-end-tls). Core mesh VPN functionality remains available.
-4. **Single account mode**: All users join the same network. This is appropriate for most self-hosted deployments.
-5. **Live qualification remains in progress**: Community testing has verified first-run setup and dashboard login. The dedicated native client transport still needs confirmation on a real Cloudron instance.
+1. **Native client port**: Clients must include the selected TCP port in
+   `--management-url`. The normal app URL remains the dashboard and REST API.
+2. **STUN port**: The selected UDP port must be directly accessible. Cloudron
+   TURN cannot replace NetBird's embedded relay/STUN because its shared-secret
+   credentials do not map to NetBird's static external-server configuration.
+3. **Reverse Proxy clusters are not supported**: NetBird's [Reverse
+   Proxy](https://docs.netbird.io/manage/reverse-proxy) component must terminate
+   TLS for public service domains on port 443. Cloudron owns host port 443 and
+   does not provide per-app TLS passthrough. See the [TLS passthrough feature
+   request](https://forum.cloudron.io/topic/15109/tls-passthrough-option-for-apps-requiring-end-to-end-tls).
+   Core mesh VPN functionality remains available.
+4. **Single account mode**: All users join the same network. This suits most
+   self-hosted deployments.
+5. **Live qualification remains in progress**: Community testing has verified
+   first-run setup and dashboard login. The dedicated native transport still
+   needs confirmation on a real Cloudron instance.
 
 ## Upstream
 
@@ -283,7 +297,8 @@ Contributions are welcome. The main areas that need work:
 
 1. **Testing on a real Cloudron instance** -- the packaging needs real-world validation
 2. **Auth flow testing** -- verify the embedded IdP setup page and login work end-to-end
-3. **gRPC/WebSocket testing** -- verify signal, management, and relay connections through the dedicated TLS port
+3. **gRPC/WebSocket testing** -- verify signal, management, and relay on the
+   dedicated TLS port
 4. **App Store submission** -- once tested, submit to the [Cloudron App Store](https://docs.cloudron.io/packaging/publishing/)
 
 ### Submitting to the Cloudron App Store

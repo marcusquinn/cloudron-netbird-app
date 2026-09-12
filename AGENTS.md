@@ -2,13 +2,16 @@
 
 ## Project Overview
 
-Cloudron app package for [NetBird](https://netbird.io) v0.65.3+ -- a self-hosted WireGuard mesh VPN. Packages the **combined server** binary (`netbird-server`) with an internal nginx proxy that separates Cloudron web traffic from native HTTP/2 client traffic.
+Cloudron app package for [NetBird](https://netbird.io) v0.65.3+ -- a self-hosted
+WireGuard mesh VPN. It packages the **combined server** binary (`netbird-server`)
+with an internal nginx proxy that separates web and native client traffic.
 
 ## Architecture
 
 - **Cloudron base image**: `cloudron/base:5.1.0`
 - **Combined server**: Single `netbird-server` binary (management + signal + relay + embedded STUN + embedded IdP)
-- **Internal nginx**: Port 8080 serves Cloudron-proxied web traffic; port 33074 terminates Cloudron-addon TLS for native clients; both route to netbird-server on port 80
+- **Internal nginx**: Port 8080 serves Cloudron-proxied web traffic. Port 33074
+  terminates Cloudron-addon TLS for native clients. Both route to port 80.
 - **Dashboard**: Static files from `netbirdio/dashboard` served directly by nginx
 - **Database**: Cloudron PostgreSQL addon
 - **Process management**: supervisord (nginx + netbird-server)
@@ -34,7 +37,12 @@ STUN uses UDP. Declare it under `udpPorts`, not `tcpPorts`, and omit a fixed `co
 
 ### Native client transport: dedicated TLS port
 
-Cloudron's app HTTPS proxy does not preserve native HTTP/2 gRPC to the container. Declare `NETBIRD_PORT` under `tcpPorts` with fixed container port 33074, require the `tls` addon, terminate TLS/HTTP2 in nginx, and advertise Cloudron's selected external port in `server.exposedAddress`. Keep dashboard/API/OIDC on normal HTTPS port 443. Do not bind nginx to container port 33073: NetBird reserves it for its backward-compatibility gRPC listener.
+Cloudron's app HTTPS proxy does not preserve native HTTP/2 gRPC to the
+container. Declare `NETBIRD_PORT` under `tcpPorts` with fixed container port
+33074, require the `tls` addon, and terminate TLS/HTTP2 in nginx. Advertise the
+selected external port in `server.exposedAddress`. Keep dashboard/API/OIDC on
+normal HTTPS port 443. NetBird reserves container port 33073 for its legacy gRPC
+listener, so nginx must not bind there.
 
 ### Dashboard runtime config
 
@@ -42,7 +50,7 @@ The exported dashboard embeds environment placeholders in `config.json` and gene
 
 ## nginx Routing (Critical)
 
-The dedicated TLS listener must match upstream routing docs: https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-combined
+The dedicated TLS listener must match the [upstream routing documentation](https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-combined).
 
 | Path | Directive | Why |
 |------|-----------|-----|
@@ -104,5 +112,6 @@ See README.md Testing Checklist for the full list.
 
 - Cloudron OIDC auto-registration not implemented (manual dashboard setup required)
 - NetBird reverse proxy feature incompatible (needs TLS passthrough, Cloudron doesn't support it)
-- Cloudron TURN addon is incompatible with NetBird's relay credential model; built-in relay/STUN are used
+- Cloudron TURN uses an incompatible relay credential model; built-in
+  relay/STUN are used
 - Not yet tested on a real Cloudron instance -- needs validation
