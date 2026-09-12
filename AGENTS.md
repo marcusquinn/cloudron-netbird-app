@@ -8,7 +8,7 @@ Cloudron app package for [NetBird](https://netbird.io) v0.65.3+ -- a self-hosted
 
 - **Cloudron base image**: `cloudron/base:5.1.0`
 - **Combined server**: Single `netbird-server` binary (management + signal + relay + embedded STUN + embedded IdP)
-- **Internal nginx**: Port 8080 serves Cloudron-proxied web traffic; port 33073 terminates Cloudron-addon TLS for native clients; both route to netbird-server on port 80
+- **Internal nginx**: Port 8080 serves Cloudron-proxied web traffic; port 33074 terminates Cloudron-addon TLS for native clients; both route to netbird-server on port 80
 - **Dashboard**: Static files from `netbirdio/dashboard` served directly by nginx
 - **Database**: Cloudron PostgreSQL addon
 - **Process management**: supervisord (nginx + netbird-server)
@@ -34,7 +34,7 @@ STUN uses UDP. Declare it under `udpPorts`, not `tcpPorts`, and omit a fixed `co
 
 ### Native client transport: dedicated TLS port
 
-Cloudron's app HTTPS proxy does not preserve native HTTP/2 gRPC to the container. Declare `NETBIRD_PORT` under `tcpPorts` with fixed container port 33073, require the `tls` addon, terminate TLS/HTTP2 in nginx, and advertise Cloudron's selected external port in `server.exposedAddress`. Keep dashboard/API/OIDC on normal HTTPS port 443.
+Cloudron's app HTTPS proxy does not preserve native HTTP/2 gRPC to the container. Declare `NETBIRD_PORT` under `tcpPorts` with fixed container port 33074, require the `tls` addon, terminate TLS/HTTP2 in nginx, and advertise Cloudron's selected external port in `server.exposedAddress`. Keep dashboard/API/OIDC on normal HTTPS port 443. Do not bind nginx to container port 33073: NetBird reserves it for its backward-compatibility gRPC listener.
 
 ### Dashboard runtime config
 
@@ -61,7 +61,7 @@ Timeouts must be `1d` for gRPC and WebSocket. `grpc_socket_keepalive on` is requ
 | `CloudronManifest.json` | Cloudron app metadata, addons (PostgreSQL, local storage, TLS), TCP/UDP ports |
 | `Dockerfile` | Downloads netbird-server binary + dashboard static files |
 | `start.sh` | Server/nginx config plus ephemeral dashboard runtime substitution |
-| `supervisord.conf` | Process management (nginx on 8080/33073, netbird-server on 80) |
+| `supervisord.conf` | Process management (nginx on 8080/33074, netbird-server on 80) |
 | `PACKAGING-NOTES.md` | Detailed architecture notes, lessons learned, testing plan |
 | `CHANGELOG.md` | Version history with breaking changes documented |
 

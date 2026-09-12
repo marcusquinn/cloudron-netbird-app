@@ -237,7 +237,7 @@ done
 # ============================================
 # This nginx exposes two frontends for the server listening on port 80:
 # - port 8080 receives dashboard/API HTTP from Cloudron's HTTPS proxy
-# - port 33073 terminates TLS directly for native HTTP/2 gRPC and relay traffic
+# - port 33074 terminates TLS directly for native HTTP/2 gRPC and relay traffic
 # The fixed container port must match tcpPorts.NETBIRD_PORT.containerPort.
 #
 # Key routing from upstream docs:
@@ -281,7 +281,7 @@ http {
 
     server {
         listen 8080;
-        listen 33073 ssl http2;
+        listen 33074 ssl http2;
         server_name _;
 
         ssl_certificate /etc/certs/tls_cert.pem;

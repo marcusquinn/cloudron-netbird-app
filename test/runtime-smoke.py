@@ -38,6 +38,7 @@ class SmokeCheck:
         self.volume = self.prefix + "-data"
         self.certificate_volume = self.prefix + "-certs"
         self.resources = []
+        self.last_http_status = "unavailable"
         self.owner_email = "owner-" + secrets.token_hex(6) + "@example.invalid"
         self.owner_password = "Smoke-" + self.owner[-24:]
         self.password = secrets.token_hex(24)
@@ -63,12 +64,18 @@ class SmokeCheck:
         return process.returncode, output, error
 
     def wait(self, probe, description):
-        while time.monotonic() < self.deadline:
+        while self.deadline - time.monotonic() > 3:
             result = probe()
             if result[0] == 0:
                 return result[1]
+            if ("container", self.app) in self.resources:
+                state = self.command("container", "inspect", "--format", "{{.State.Status}}",
+                                     self.app, check=False)
+                if state[0] == 0 and state[1].strip() not in ("created", "running"):
+                    raise SmokeError("application container exited while waiting for " + description)
             time.sleep(min(1, max(0, self.deadline - time.monotonic())))
-        raise SmokeError("deadline waiting for " + description)
+        suffix = " (last HTTP status: " + self.last_http_status + ")" if "endpoint" in description else ""
+        raise SmokeError("deadline waiting for " + description + suffix)
 
     def create(self, kind, name, *options, environment=None):
         # Register the unique name before creation, including interrupted CLI calls.
@@ -102,7 +109,7 @@ class SmokeCheck:
             raise SmokeError("invalid manifest HTTP port")
         if not isinstance(self.health_path, str) or not self.health_path.startswith("/"):
             raise SmokeError("invalid manifest health path")
-        if self.native_container_port != 33073:
+        if self.native_container_port != 33074:
             raise SmokeError("invalid manifest native client container port")
 
     def start(self):
@@ -151,6 +158,13 @@ class SmokeCheck:
             environment=dict(os.environ, CLOUDRON_POSTGRESQL_PASSWORD=self.password),
         )
         self.command("start", self.app)
+        self.wait(lambda: self.command("exec", self.app, "test", "-s",
+                                      "/app/data/config/nginx.conf", check=False),
+                  "nginx configuration generation")
+        nginx_test = self.command("exec", self.app, "runuser", "-u", "cloudron", "--",
+                                  "nginx", "-t", "-c", "/app/data/config/nginx.conf", check=False)
+        if nginx_test[0] != 0:
+            raise SmokeError("generated nginx configuration is invalid")
 
     def http(self, path, method="GET", data=None):
         args = [
@@ -163,6 +177,7 @@ class SmokeCheck:
         args.append("http://127.0.0.1:" + str(self.port) + path)
         code, output, error = self.command(*args, check=False)
         body, _, status = output.rpartition("\n")
+        self.last_http_status = status if status.isdecimal() else "unavailable"
         return (0 if code == 0 and status == "200" else 1), body, error
 
     def instance_setup_required(self):
@@ -244,18 +259,24 @@ class SmokeCheck:
         return sorted(selected)
 
     def verify(self, phase, setup_required):
-        self.stage = phase + " health and process checks"
+        self.stage = phase + " health endpoint"
         self.wait(lambda: self.http(self.health_path), "manifest health endpoint")
+        self.stage = phase + " OIDC discovery"
         discovery = self.http("/oauth2/.well-known/openid-configuration")
         if discovery[0] or json.loads(discovery[1]).get("issuer") != "https://" + DOMAIN + "/oauth2":
             raise SmokeError("OIDC discovery issuer mismatch")
+        self.stage = phase + " setup state"
         if self.http("/setup")[0]:
             raise SmokeError("setup page unavailable")
         if self.instance_setup_required() is not setup_required:
             raise SmokeError("instance setup state mismatch")
+        self.stage = phase + " dashboard configuration"
         self.dashboard_runtime_config()
+        self.stage = phase + " STUN listener"
         self.stun_listener()
+        self.stage = phase + " native TLS listener"
         self.native_tls_listener()
+        self.stage = phase + " process stability"
         before = self.processes()
         time.sleep(min(3, max(0, self.deadline - time.monotonic())))
         if self.processes() != before or self.http(self.health_path)[0]:

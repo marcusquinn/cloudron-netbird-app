@@ -54,7 +54,7 @@ main() {
 	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
 	assert_contains Dockerfile 'gettext-base' || return 1
 	jq -e '.udpPorts.STUN_PORT.containerPort == null' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "STUN must use the selected external port inside the container" || return 1
-	jq -e '.addons.tls == {} and .tcpPorts.NETBIRD_PORT.defaultValue == 33073 and .tcpPorts.NETBIRD_PORT.containerPort == 33073 and .tcpPorts.NETBIRD_PORT.enabledByDefault == true' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Native client transport must use the Cloudron TLS addon and dedicated container port" || return 1
+	jq -e '.addons.tls == {} and .tcpPorts.NETBIRD_PORT.defaultValue == 33073 and .tcpPorts.NETBIRD_PORT.containerPort == 33074 and .tcpPorts.NETBIRD_PORT.enabledByDefault == true' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Native client transport must use the Cloudron TLS addon and dedicated container port" || return 1
 	assert_contains start.sh 'cp -a /app/code/dashboard/. /run/dashboard/' || return 1
 	assert_contains start.sh 'envsubst "' || return 1
 	assert_contains start.sh 'grep -RIlZ -- "AUTH_SUPPORTED_SCOPES" /run/dashboard' || return 1
@@ -66,11 +66,11 @@ main() {
 	assert_contains start.sh "try_files \$uri.html \$uri \$uri/ /index.html;" || return 1
 	assert_contains start.sh "rewrite ^(.+)/\$ \$1 last;" || return 1
 	assert_contains start.sh 'listen 8080;' || return 1
-	assert_contains start.sh 'listen 33073 ssl http2;' || return 1
+	assert_contains start.sh 'listen 33074 ssl http2;' || return 1
 	assert_contains start.sh 'ssl_certificate /etc/certs/tls_cert.pem;' || return 1
 	# shellcheck disable=SC2016 # Assert the generated-script placeholders literally.
 	assert_contains start.sh 'exposedAddress: "https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"' || return 1
-	assert_contains Dockerfile 'EXPOSE 8080 33073' || return 1
+	assert_contains Dockerfile 'EXPOSE 8080 33074' || return 1
 	assert_contains start.sh 'openssl rand -base64 32' || return 1
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'platforms: linux/amd64' || return 1
 	assert_contains Dockerfile 'COPY --from=server /go/bin/netbird-server /app/code/bin/netbird-server' || return 1

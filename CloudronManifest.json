@@ -26,7 +26,7 @@
       "title": "NetBird client transport",
       "description": "TLS port for native NetBird management, signal, and relay traffic.",
       "defaultValue": 33073,
-      "containerPort": 33073,
+      "containerPort": 33074,
       "enabledByDefault": true
     }
   },

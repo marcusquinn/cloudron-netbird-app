@@ -37,7 +37,7 @@ NetBird clients connect to this server to join the mesh.
 | Memory | 512 MB (configurable in manifest) |
 | Ports | TCP 443 for web, one configurable TCP client port (33073 by default), and one configurable UDP STUN port (3478 by default) |
 
-**Important**: Keep both selected NetBird ports accessible from clients. Cloudron maps the external native TCP port to container port 33073; NetBird listens directly on the selected STUN UDP port.
+**Important**: Keep both selected NetBird ports accessible from clients. Cloudron maps the external native TCP port to container port 33074; NetBird listens directly on the selected STUN UDP port.
 
 ## Installation
 
@@ -113,7 +113,7 @@ Cloudron Server
 | Cloudron HTTPS :443 -> nginx :8080                       |
 |   dashboard, REST API, embedded IdP                      |
 |                                                          |
-| selected TCP port -> nginx :33073 (Cloudron TLS cert)    |
+| selected TCP port -> nginx :33074 (Cloudron TLS cert)    |
 |   native HTTP/2 gRPC + relay/WebSocket                   |
 |                          |                               |
 |                          v                               |

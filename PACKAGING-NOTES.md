@@ -14,7 +14,7 @@ Key design decisions:
 2. **Cloudron OIDC is optional** and added post-setup via the dashboard UI. This avoids the Catch-22 where you need to log in to configure the IdP you need to log in with.
 3. **config.yaml** (not `management.json`) is used for server configuration. The old `management.json` format is for the legacy multi-container architecture and does not enable the embedded IdP.
 4. **Dashboard static files** are served directly by our nginx. The upstream `netbirdio/dashboard` container has its own nginx that generates runtime config from env vars -- we replicate its allowlisted `envsubst` pass in an ephemeral dashboard copy under `/run`.
-5. **Native clients use a dedicated TLS port** because Cloudron's standard app proxy terminates TLS without preserving native HTTP/2 gRPC to the container. nginx listens on fixed container port 33073 using the `tls` addon, while `server.exposedAddress` advertises the selected external `NETBIRD_PORT`.
+5. **Native clients use a dedicated TLS port** because Cloudron's standard app proxy terminates TLS without preserving native HTTP/2 gRPC to the container. nginx listens on fixed container port 33074 using the `tls` addon, while `server.exposedAddress` advertises the selected external `NETBIRD_PORT`. Port 33073 cannot be used inside the container because NetBird v0.78.1 reserves it for its backward-compatibility gRPC listener.
 
 ### What works well with Cloudron
 
@@ -30,7 +30,7 @@ Key design decisions:
 |-------|---------|-------------------|
 | `postgresql` | Database | `CLOUDRON_POSTGRESQL_*` env vars -> `server.store.dsn` in config.yaml |
 | `localstorage` | Persistent data | `/app/data/` for config, encryption key, auth secret |
-| `tls` | Certificate for native protocols | `/etc/certs/tls_cert.pem` and `tls_key.pem` on nginx port 33073 |
+| `tls` | Certificate for native protocols | `/etc/certs/tls_cert.pem` and `tls_key.pem` on nginx port 33074 |
 
 ### Addons NOT used (and why)
 
@@ -41,7 +41,7 @@ Key design decisions:
 
 ### nginx routing (critical)
 
-The internal nginx accepts Cloudron-proxied HTTP on port 8080 and direct TLS/HTTP2 on fixed container port 33073, then routes both listeners to the combined server on port 80. The native listener routing must match the [upstream nginx configuration](https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-combined):
+The internal nginx accepts Cloudron-proxied HTTP on port 8080 and direct TLS/HTTP2 on fixed container port 33074, then routes both listeners to the combined server on port 80. The native listener routing must match the [upstream nginx configuration](https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-combined):
 
 | Path | Protocol | nginx directive | Notes |
 |------|----------|----------------|-------|
