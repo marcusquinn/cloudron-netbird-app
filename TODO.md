@@ -75,7 +75,6 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 - [ ] t022 Add keyless provenance for Cloudron catalogs ref:GH#74
 
-- [ ] t24 Fix NetBird native client transport on Cloudron #bug #priority:high ref:GH#121
 
 ## In Progress
 
@@ -91,6 +90,7 @@ Compatible with [todo-md](https://github.com/todo-md/todo-md), [todomd](https://
 
 ## Done
 
+- [x] t24 Fix NetBird native client transport on Cloudron #bug #priority:high ref:GH#121 pr:#122 testing:runtime-verified completed:2026-09-12
 - [x] t23 Fix first-run dashboard setup authentication and STUN port mapping #auto-dispatch ~1h ref:GH#114 logged:2026-09-11 pr:#115 testing:runtime-verified completed:2026-09-11
 <!--TOON:done[7]{id,desc,owner,tags,est,actual,logged,started,completed,status}:
 t004,Audit README.md — ensure version references current and install instructions accurate and configuration options complete and screenshots/examples up to date,marcus,docs audit,~30m,~30m,2026-03-01,,2026-03-01,done
