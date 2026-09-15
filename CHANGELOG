@@ -1,3 +1,6 @@
+[2.0.17]
+* Update the combined NetBird server to v0.78.2.
+
 [2.0.16]
 * Add a dedicated TLS-enabled TCP port for native NetBird management, signal, and relay traffic.
 * Keep the dashboard and REST API on Cloudron HTTPS while advertising the selected native client port.

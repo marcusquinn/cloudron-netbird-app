@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.17] - 2026-09-16
+
+- Updated the combined NetBird server from `v0.78.1` to `v0.78.2`.
+
 ## [2.0.16] - 2026-09-12
 
 - Added a dedicated Cloudron TCP port with the `tls` addon so native NetBird
