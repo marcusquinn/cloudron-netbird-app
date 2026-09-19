@@ -43,53 +43,8 @@ qualification_contract() {
 	return 0
 }
 
-main() {
-	jq -e '.manifestVersion == 2 and .version == "2.0.18" and .upstreamVersion == "0.79.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
-		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
-	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
-	[[ -f "${ROOT_DIR}/PUBLISHING.md" ]] || fail "PUBLISHING.md is missing" || return 1
-	[[ -f "${ROOT_DIR}/DESIGN.md" ]] || fail "DESIGN.md is missing" || return 1
-	[[ -f "${ROOT_DIR}/media/hero.png" ]] || fail "media/hero.png is missing" || return 1
-	jq -e '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Version catalog contract failed" || return 1
-	jq -e '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Historical catalog entries must not use Cloudron-10-only packageUrl" || return 1
-	assert_contains CHANGELOG '[2.0.18]' || return 1
-	assert_contains CHANGELOG.md '[2.0.18] - 2026-09-19' || return 1
-	assert_contains SECURITY.md '| 2.0.18      | 0.79.0           | Yes        |' || return 1
-	assert_contains README.md '| Cloudron | v9.1.0+ |' || return 1
-	qualification_contract || return 1
-	assert_contains PUBLISHING.md 'is standing authorization for the managed publication' || return 1
-	assert_contains PUBLISHING.md 'ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
-	jq -e '.versions["2.0.3"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
-	assert_contains Dockerfile 'netbirdio/netbird-server:0.79.0@sha256:d1da0c0179c9e6f2ab7b48be54d06341b11037855a9426b9f2536aa79f13360b AS server' || return 1
-	assert_contains Dockerfile 'netbirdio/dashboard:v2.92.0@sha256:fa2d8b02a81761e4d2a22df4041d13316b7635f1e93273eafeb53d4991e55b5a AS dashboard' || return 1
-	assert_contains Dockerfile 'cloudron/base:5.1.0@sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e' || return 1
-	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
-	assert_contains Dockerfile 'gettext-base' || return 1
-	jq -e '.udpPorts.STUN_PORT.containerPort == null' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "STUN must use the selected external port inside the container" || return 1
-	jq -e '.addons.tls == {} and .tcpPorts.NETBIRD_PORT.defaultValue == 33073 and .tcpPorts.NETBIRD_PORT.containerPort == 33074 and .tcpPorts.NETBIRD_PORT.enabledByDefault == true' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Native client transport must use the Cloudron TLS addon and dedicated container port" || return 1
-	assert_contains start.sh 'cp -a /app/code/dashboard/. /run/dashboard/' || return 1
-	assert_contains start.sh 'envsubst "' || return 1
-	assert_contains start.sh 'grep -RIlZ -- "AUTH_SUPPORTED_SCOPES" /run/dashboard' || return 1
-	# Keep the parent privileged for log/PID access; only its services drop privileges.
-	assert_contains start.sh 'exec /usr/bin/supervisord --configuration /app/code/supervisord.conf --nodaemon' || return 1
-	[[ "$(grep -Fc 'user=cloudron' "${ROOT_DIR}/supervisord.conf")" -eq 2 ]] || fail "Both managed services must run as cloudron" || return 1
-	assert_contains start.sh 'root /run/dashboard;' || return 1
-	assert_contains start.sh 'error_log /run/nginx/error.log;' || return 1
-	assert_contains start.sh "try_files \$uri.html \$uri \$uri/ /index.html;" || return 1
-	assert_contains start.sh "rewrite ^(.+)/\$ \$1 last;" || return 1
-	assert_contains start.sh 'listen 8080;' || return 1
-	assert_contains start.sh 'listen 33074 ssl http2;' || return 1
-	assert_contains start.sh 'ssl_certificate /etc/certs/tls_cert.pem;' || return 1
-	# shellcheck disable=SC2016 # Assert the generated-script placeholders literally.
-	assert_contains start.sh 'exposedAddress: "https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"' || return 1
-	assert_contains Dockerfile 'EXPOSE 8080 33074' || return 1
-	assert_contains start.sh 'openssl rand -base64 32' || return 1
+publishing_contract() {
 	assert_contains .github/workflows/cloudron-catalog-publish.yml 'platforms: linux/amd64' || return 1
-	assert_contains Dockerfile 'COPY --from=server /go/bin/netbird-server /app/code/bin/netbird-server' || return 1
-	assert_contains Dockerfile 'COPY --from=dashboard /usr/share/nginx/html/ /app/code/dashboard/' || return 1
-	if grep -Eq '/releases/latest([/?#]|$)' "${ROOT_DIR}/Dockerfile"; then
-		fail "Dockerfile contains a moving latest release download" || return 1
-	fi
 	assert_contains .github/workflows/cloudron-package-release.yml "- 'v*'" || return 1
 	assert_contains .github/workflows/cloudron-package-release.yml 'uses: marcusquinn/aidevops/.github/workflows/cloudron-package-release-reusable.yml@22a6b4b29087ce2fcf3857596a40ff7b2c436482' || return 1
 	assert_contains .github/workflows/cloudron-package-release.yml 'aidevops_ref: 22a6b4b29087ce2fcf3857596a40ff7b2c436482' || return 1
@@ -139,6 +94,56 @@ main() {
 	if grep -Fq -- '--versions-file' "${ROOT_DIR}/scripts/publish-cloudron-catalog.sh"; then
 		fail "Publisher uses unsupported Cloudron CLI --versions-file option" || return 1
 	fi
+	return 0
+}
+
+main() {
+	jq -e '.manifestVersion == 2 and .version == "2.0.18" and .upstreamVersion == "0.79.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
+	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
+	[[ -f "${ROOT_DIR}/PUBLISHING.md" ]] || fail "PUBLISHING.md is missing" || return 1
+	[[ -f "${ROOT_DIR}/DESIGN.md" ]] || fail "DESIGN.md is missing" || return 1
+	[[ -f "${ROOT_DIR}/media/hero.png" ]] || fail "media/hero.png is missing" || return 1
+	jq -e '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Version catalog contract failed" || return 1
+	jq -e '[.versions[].manifest | has("packageUrl")] | all(. == false)' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Historical catalog entries must not use Cloudron-10-only packageUrl" || return 1
+	assert_contains CHANGELOG '[2.0.18]' || return 1
+	assert_contains CHANGELOG.md '[2.0.18] - 2026-09-19' || return 1
+	assert_contains SECURITY.md '| 2.0.18      | 0.79.0           | Yes        |' || return 1
+	assert_contains README.md '| Cloudron | v9.1.0+ |' || return 1
+	qualification_contract || return 1
+	assert_contains PUBLISHING.md 'is standing authorization for the managed publication' || return 1
+	assert_contains PUBLISHING.md 'ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
+	jq -e '.versions["2.0.3"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
+	assert_contains Dockerfile 'netbirdio/netbird-server:0.79.0@sha256:d1da0c0179c9e6f2ab7b48be54d06341b11037855a9426b9f2536aa79f13360b AS server' || return 1
+	assert_contains Dockerfile 'netbirdio/dashboard:v2.92.0@sha256:fa2d8b02a81761e4d2a22df4041d13316b7635f1e93273eafeb53d4991e55b5a AS dashboard' || return 1
+	assert_contains Dockerfile 'cloudron/base:5.1.0@sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e' || return 1
+	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
+	assert_contains Dockerfile 'gettext-base' || return 1
+	jq -e '.udpPorts.STUN_PORT.containerPort == null' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "STUN must use the selected external port inside the container" || return 1
+	jq -e '.addons.tls == {} and .tcpPorts.NETBIRD_PORT.defaultValue == 33073 and .tcpPorts.NETBIRD_PORT.containerPort == 33074 and .tcpPorts.NETBIRD_PORT.enabledByDefault == true' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Native client transport must use the Cloudron TLS addon and dedicated container port" || return 1
+	assert_contains start.sh 'cp -a /app/code/dashboard/. /run/dashboard/' || return 1
+	assert_contains start.sh 'envsubst "' || return 1
+	assert_contains start.sh 'grep -RIlZ -- "AUTH_SUPPORTED_SCOPES" /run/dashboard' || return 1
+	# Keep the parent privileged for log/PID access; only its services drop privileges.
+	assert_contains start.sh 'exec /usr/bin/supervisord --configuration /app/code/supervisord.conf --nodaemon' || return 1
+	[[ "$(grep -Fc 'user=cloudron' "${ROOT_DIR}/supervisord.conf")" -eq 2 ]] || fail "Both managed services must run as cloudron" || return 1
+	assert_contains start.sh 'root /run/dashboard;' || return 1
+	assert_contains start.sh 'error_log /run/nginx/error.log;' || return 1
+	assert_contains start.sh "try_files \$uri.html \$uri \$uri/ /index.html;" || return 1
+	assert_contains start.sh "rewrite ^(.+)/\$ \$1 last;" || return 1
+	assert_contains start.sh 'listen 8080;' || return 1
+	assert_contains start.sh 'listen 33074 ssl http2;' || return 1
+	assert_contains start.sh 'ssl_certificate /etc/certs/tls_cert.pem;' || return 1
+	# shellcheck disable=SC2016 # Assert the generated-script placeholders literally.
+	assert_contains start.sh 'exposedAddress: "https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"' || return 1
+	assert_contains Dockerfile 'EXPOSE 8080 33074' || return 1
+	assert_contains start.sh 'openssl rand -base64 32' || return 1
+	assert_contains Dockerfile 'COPY --from=server /go/bin/netbird-server /app/code/bin/netbird-server' || return 1
+	assert_contains Dockerfile 'COPY --from=dashboard /usr/share/nginx/html/ /app/code/dashboard/' || return 1
+	if grep -Eq '/releases/latest([/?#]|$)' "${ROOT_DIR}/Dockerfile"; then
+		fail "Dockerfile contains a moving latest release download" || return 1
+	fi
+	publishing_contract || return 1
 	bash "${ROOT_DIR}/test/publish-catalog-test.sh" || return 1
 	bash -n "${ROOT_DIR}/start.sh"
 	shellcheck "${ROOT_DIR}/test/package-test.sh" "${ROOT_DIR}/test/publish-catalog-test.sh" "${ROOT_DIR}/scripts/publish-cloudron-catalog.sh"
