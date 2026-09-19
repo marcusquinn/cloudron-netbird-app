@@ -139,7 +139,8 @@ AUTH_SECRET=$(cat /app/data/config/.auth_secret)
 # ============================================
 echo "==> Generating NetBird configuration"
 
-NETBIRD_DOMAIN="${CLOUDRON_APP_DOMAIN}"
+# envsubst reads the process environment, not unexported shell variables.
+export NETBIRD_DOMAIN="${CLOUDRON_APP_DOMAIN}"
 NETBIRD_NATIVE_PORT="${NETBIRD_PORT}"
 
 # ============================================
