@@ -11,9 +11,9 @@ version, or a multi-host topology.
 - **No default production target:** every command below is either a local,
   disposable Docker fixture or a procedure that requires an explicitly named
   maintenance target and separate operator approval.
-- `test/runtime-smoke.py` accepts only `--target local-docker`. It does not
-  pull images, publish ports, discover hosts, issue public certificates, create
-  DNS records, or modify a Cloudron installation.
+- `test/runtime-smoke.py` has no remote-target argument. It runs only its local
+  Docker fixture and does not pull images, publish ports, discover hosts, issue
+  public certificates, create DNS records, or modify a Cloudron installation.
 - The smoke harness labels each owned Docker resource with
   `io.netbird.cloudron.smoke=<run-id>`. It removes only resources whose label
   matches that run; after interruption, inspect the reported name and label
@@ -25,6 +25,12 @@ version, or a multi-host topology.
 - A failed safety gate is a failed case, not an invitation to retry against a
   shared host. It must not target a production instance without a separately
   approved maintenance procedure.
+
+Use this compact record for a new execution: `case=<matrix row>;
+package=<version and image digest>; platform=<Cloudron version/topology>;
+command=<redacted invocation>; result=<observable assertion>;
+cleanup=<owned-resource result>`. A historical observation must retain its
+historical label rather than being rewritten as a current pass.
 
 ## Safe local entrypoints
 
@@ -43,7 +49,7 @@ Docker containers, network, and volumes.
 ```bash
 docker build --platform linux/amd64 -t netbird-smoke:candidate .
 docker pull postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20
-python3 test/runtime-smoke.py --target local-docker --image netbird-smoke:candidate
+python3 test/runtime-smoke.py --image netbird-smoke:candidate
 ```
 
 The harness covers fresh setup, generated dashboard configuration, selected

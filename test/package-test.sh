@@ -38,8 +38,7 @@ qualification_contract() {
 	assert_contains test/QUALIFICATION.md 'Historical observation' || return 1
 	assert_contains test/QUALIFICATION.md 'must not target a production instance' || return 1
 	assert_contains test/QUALIFICATION.md 'No default production target' || return 1
-	assert_contains test/runtime-smoke.py 'choices=("local-docker",)' || return 1
-	assert_contains test/runtime-smoke.py 'production and remote targets are unsupported' || return 1
+	assert_contains test/runtime-smoke.py 'never publishes images or host ports' || return 1
 	return 0
 }
 
