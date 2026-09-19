@@ -32,6 +32,17 @@ assert_precedes() {
 	return 0
 }
 
+assert_native_dashboard_redirect_contract() {
+	# shellcheck disable=SC2016 # Assert generated nginx variables literally.
+	assert_contains start.sh 'map "$server_port:$request_method" $native_dashboard_redirect {' || return 1
+	# shellcheck disable=SC2016 # Assert generated nginx variables literally.
+	assert_contains start.sh '~^33074:(GET|HEAD)$ "https://${NETBIRD_DOMAIN}";' || return 1
+	# shellcheck disable=SC2016 # Assert generated nginx variables literally.
+	assert_contains start.sh 'return 308 $native_dashboard_redirect$request_uri;' || return 1
+	assert_contains start.sh "envsubst '\${NETBIRD_DOMAIN}' </app/data/config/nginx.conf.template >/app/data/config/nginx.conf" || return 1
+	return 0
+}
+
 main() {
 	jq -e '.manifestVersion == 2 and .version == "2.0.18" and .upstreamVersion == "0.79.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
@@ -67,13 +78,7 @@ main() {
 	assert_contains start.sh "rewrite ^(.+)/\$ \$1 last;" || return 1
 	assert_contains start.sh 'listen 8080;' || return 1
 	assert_contains start.sh 'listen 33074 ssl http2;' || return 1
-	# shellcheck disable=SC2016 # Assert generated nginx variables literally.
-	assert_contains start.sh 'map "$server_port:$request_method" $native_dashboard_redirect {' || return 1
-	# shellcheck disable=SC2016 # Assert generated nginx variables literally.
-	assert_contains start.sh '~^33074:(GET|HEAD)$ "https://${NETBIRD_DOMAIN}";' || return 1
-	# shellcheck disable=SC2016 # Assert generated nginx variables literally.
-	assert_contains start.sh 'return 308 $native_dashboard_redirect$request_uri;' || return 1
-	assert_contains start.sh "envsubst '\${NETBIRD_DOMAIN}' </app/data/config/nginx.conf.template >/app/data/config/nginx.conf" || return 1
+	assert_native_dashboard_redirect_contract || return 1
 	assert_contains start.sh 'ssl_certificate /etc/certs/tls_cert.pem;' || return 1
 	# shellcheck disable=SC2016 # Assert the generated-script placeholders literally.
 	assert_contains start.sh 'exposedAddress: "https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"' || return 1
