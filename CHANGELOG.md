@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.18] - 2026-09-19
+
+- Updated the combined NetBird server from `v0.78.2` to `v0.79.0`.
+
 ## [2.0.17] - 2026-09-16
 
 - Updated the combined NetBird server from `v0.78.1` to `v0.78.2`.
