@@ -1,0 +1,10 @@
+.git
+.github
+.cloudron
+.env*
+__pycache__
+**/__pycache__
+*.log
+*.tar.gz
+test
+todo

@@ -26,6 +26,8 @@ This Cloudron app packages the **NetBird combined server** (v0.77.0+), which inc
 - **STUN server** -- NAT type detection (UDP 3478)
 - **Embedded IdP** -- built-in user management (Dex) with `/setup` onboarding page
 - **Dashboard** -- web UI for administration
+- **Optional Reverse Proxy** -- public HTTPS services through mesh peers, using
+  the [single-VPS second-IP setup](REVERSE-PROXY.md). Disabled by default.
 
 NetBird clients connect to this server to join the mesh.
 
@@ -279,17 +281,15 @@ cloudron-netbird-app/
 2. **STUN port**: The selected UDP port must be directly accessible. Cloudron
    TURN cannot replace NetBird's embedded relay/STUN because its shared-secret
    credentials do not map to NetBird's static external-server configuration.
-3. **Reverse Proxy clusters are not supported**: NetBird's [Reverse
-   Proxy](https://docs.netbird.io/manage/reverse-proxy) component must terminate
-   TLS for public service domains on port 443. Cloudron owns host port 443 and
-   does not provide per-app TLS passthrough. See the [TLS passthrough feature
-   request](https://forum.cloudron.io/topic/15109/tls-passthrough-option-for-apps-requiring-end-to-end-tls).
-   Core mesh VPN functionality remains available.
+3. **Reverse Proxy needs separate ingress**: Cloudron's normal HTTPS endpoint
+   cannot provide raw TLS passthrough. The optional [second-IP host bridge](REVERSE-PROXY.md)
+   supports HTTPS services on one VPS without modifying platform nginx. It is
+   administrator-managed host configuration, not an automatic Cloudron feature.
 4. **Single account mode**: All users join the same network. This suits most
    self-hosted deployments.
-5. **Live qualification remains in progress**: Community testing has verified
-   first-run setup and dashboard login. The dedicated native transport still
-   needs confirmation on a real Cloudron instance.
+5. **Qualification scope**: Native peer registration and public HTTPS-to-peer
+   proxying have passed on a live Cloudron installation. Full VPS reboot and
+   platform-upgrade qualification remain separate maintenance-window tests.
 
 ## Upstream
 

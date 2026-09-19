@@ -1,3 +1,8 @@
+[2.1.0]
+* Add opt-in bundled NetBird Reverse Proxy with dedicated-IP host TLS forwarding.
+* Keep proxy disabled by default and preserve normal Cloudron dashboard/native-client traffic.
+* Add local-only initial setup, proxy credential/certificate persistence, and live peer-to-service verification.
+
 [2.0.18]
 * Update the combined NetBird server to v0.79.0.
 

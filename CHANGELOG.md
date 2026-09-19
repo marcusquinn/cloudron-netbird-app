@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2.1.0 candidate
+
+- Bundle the pinned NetBird proxy as an optional unprivileged service.
+- Add a dedicated-IP host bridge with raw TLS, source identity preservation,
+  isolated firewall rules, rollback and drift detection. No platform nginx edits.
+- Persist proxy credentials and certificates; require explicit domain and trusted
+  forwarding source. Disable arbitrary custom proxy ports.
+- Route ProxyService gRPC and optionally restrict initial setup to app-local calls.
+- Add live tests for peer registration, public certificate issuance, proxy traffic,
+  header authentication and forwarded-IP spoof rejection. Not yet catalog-published.
+
 ## [2.0.18] - 2026-09-19
 
 - Updated the combined NetBird server from `v0.78.2` to `v0.79.0`.

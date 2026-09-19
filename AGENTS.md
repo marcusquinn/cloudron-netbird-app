@@ -111,7 +111,11 @@ See README.md Testing Checklist for the full list.
 ## Known Issues / Future Work
 
 - Cloudron OIDC auto-registration not implemented (manual dashboard setup required)
-- NetBird reverse proxy feature incompatible (needs TLS passthrough, Cloudron doesn't support it)
+- Optional single-VPS Reverse Proxy uses a second-IP host bridge, not Cloudron
+  HTTPS. See REVERSE-PROXY.md. Trust the dedicated SNAT IP /32, never the shared
+  Docker gateway: Cloudron masquerades intra-bridge traffic.
 - Cloudron TURN uses an incompatible relay credential model; built-in
   relay/STUN are used
-- Not yet tested on a real Cloudron instance -- needs validation
+- Live native registration, ACME/TLS, remote peer HTTP traffic, header auth and
+  forged-forwarding-header denial are verified. Full VPS reboot and platform
+  upgrade qualification still require a maintenance window.
