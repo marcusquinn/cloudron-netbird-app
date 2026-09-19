@@ -219,8 +219,12 @@ remove only those resources after confirming that label. SIGKILL or a stopped
 Docker daemon can prevent cleanup. Never use a broad Docker prune as recovery.
 
 This is not a live Cloudron, backup/restore, VPN-client, or SSO test. The fast
-`bash test/package-test.sh` remains independent of Docker. Complete the manual
-checklist below for live-instance qualification.
+`bash test/package-test.sh` remains independent of Docker. The only supported
+runtime target is the local Docker fixture; it never discovers a remote host or
+defaults to a production instance. See
+[`test/QUALIFICATION.md`](test/QUALIFICATION.md) for the evidence-indexed
+qualification matrix, maintenance consent boundaries, and open live-instance
+cases.
 
 - [ ] Fresh install completes without errors
 - [ ] Dashboard loads at app URL
