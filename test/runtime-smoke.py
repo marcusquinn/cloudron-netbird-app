@@ -373,6 +373,10 @@ def interrupted(signum, _frame):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--target", default="local-docker", choices=("local-docker",),
+        help="explicit disposable target; production and remote targets are unsupported",
+    )
     parser.add_argument("--image", required=True, help="locally present candidate image (never pulled automatically)")
     parser.add_argument("--timeout", type=int, default=180, help="overall test budget in seconds (default 180, plus up to 60 for cleanup)")
     args = parser.parse_args()

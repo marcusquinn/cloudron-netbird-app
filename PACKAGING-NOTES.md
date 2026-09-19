@@ -82,6 +82,11 @@ configuration](https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-c
 
 ### What needs testing
 
+The reproducible status, provenance requirements, cleanup ownership, and safe
+entrypoints for these cases are maintained in
+[`test/QUALIFICATION.md`](test/QUALIFICATION.md). Historical observations are
+not a substitute for a current candidate run or production qualification.
+
 1. **Embedded IdP flow** -- `/setup` page creates admin, `/oauth2/token` issues tokens, dashboard login works
 2. **gRPC routing** -- Signal and Management negotiate HTTP/2 on the dedicated
    TLS port and pass through nginx `grpc_pass`.
