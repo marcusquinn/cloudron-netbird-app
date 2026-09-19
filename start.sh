@@ -244,9 +244,10 @@ done
 # - gRPC paths need grpc_pass (nginx handles h2c natively with grpc_pass)
 # - WebSocket paths need proxy_pass with Upgrade headers
 # - /api and /oauth2 are standard HTTP
-# - Dashboard is the catch-all
+# - Dashboard is the catch-all on the web listener. Browser navigation to the
+#   native listener is redirected to the configured canonical HTTPS origin.
 
-cat >/app/data/config/nginx.conf <<'NGINX_EOF'
+cat >/app/data/config/nginx.conf.template <<'NGINX_EOF'
 worker_processes auto;
 pid /run/nginx/nginx.pid;
 error_log /run/nginx/error.log;
@@ -273,6 +274,14 @@ http {
     map $http_upgrade $connection_upgrade {
         default upgrade;
         '' close;
+    }
+
+    # The direct-TLS listener is only for native transport. Redirect browser
+    # navigation without trusting the incoming Host header or affecting native
+    # gRPC, relay, WebSocket, API, or OAuth locations declared below.
+    map "$server_port:$request_method" $native_dashboard_redirect {
+        default "";
+        ~^33074:(GET|HEAD)$ "https://${NETBIRD_DOMAIN}";
     }
 
     upstream netbird_server {
@@ -329,6 +338,9 @@ http {
 
         # ---- Dashboard (catch-all, lowest priority) ----
         location / {
+            if ($native_dashboard_redirect != "") {
+                return 308 $native_dashboard_redirect$request_uri;
+            }
             root /run/dashboard;
             # Next.js exports page.html beside page/ metadata directories.
             rewrite ^(.+)/$ $1 last;
@@ -337,6 +349,9 @@ http {
     }
 }
 NGINX_EOF
+# shellcheck disable=SC2016 # Expand only this trusted configuration placeholder.
+envsubst '${NETBIRD_DOMAIN}' </app/data/config/nginx.conf.template >/app/data/config/nginx.conf
+rm /app/data/config/nginx.conf.template
 
 # ============================================
 # PHASE 5: Permissions

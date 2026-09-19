@@ -58,13 +58,16 @@ configuration](https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-c
 | `/management.ManagementService/*` | gRPC | `grpc_pass` | HTTP/2 cleartext (h2c) |
 | `/relay*`, `/ws-proxy/*` | WebSocket | `proxy_pass` + Upgrade | Long-lived connections |
 | `/api/*`, `/oauth2/*` | HTTP | `proxy_pass` | REST API + embedded IdP |
-| `/*` | HTTP | static files | Dashboard catch-all |
+| `/*` | HTTP | static files / canonical redirect | The web listener serves the dashboard; GET/HEAD browser navigation on the native listener redirects to canonical HTTPS |
 
 **Key gotchas**:
 - gRPC paths MUST use `grpc_pass`, not `proxy_pass`. nginx handles h2c natively with `grpc_pass`.
 - WebSocket paths need `proxy_http_version 1.1` and `Upgrade`/`Connection` headers.
 - Timeouts must be `1d` for long-lived gRPC and WebSocket connections.
 - The combined server listens on port 80 internally (not 8081 as in the old architecture).
+- The native listener's dashboard redirect uses the configured Cloudron domain,
+  never the incoming `Host` header. Explicit native transport, API, and OAuth
+  locations remain proxied without redirects.
 
 ### Challenges and solutions
 

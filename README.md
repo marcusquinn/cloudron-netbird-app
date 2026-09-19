@@ -269,6 +269,9 @@ cloudron-netbird-app/
 
 1. **Native client port**: Clients must include the selected TCP port in
    `--management-url`. The normal app URL remains the dashboard and REST API.
+   Opening the selected native port in a browser redirects GET/HEAD dashboard
+   navigation to that canonical HTTPS URL; native transport endpoints remain on
+   the selected port.
 2. **STUN port**: The selected UDP port must be directly accessible. Cloudron
    TURN cannot replace NetBird's embedded relay/STUN because its shared-secret
    credentials do not map to NetBird's static external-server configuration.
