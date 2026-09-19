@@ -16,3 +16,12 @@ visual language. It does not rebrand NetBird or imply an official distribution.
 
 These assets are package metadata only. The dashboard copied from the pinned
 upstream image remains visually unmodified.
+
+## Navigation and authentication entry points
+
+- The canonical browser entry point is the app's normal HTTPS URL. Dashboard
+  navigation through the native client port redirects there while preserving
+  the requested route and query.
+- Native client transport stays on the selected TCP port. The redirect is not a
+  substitute for a client `--management-url` and does not change gRPC, relay,
+  WebSocket, REST API, or OAuth routing.
