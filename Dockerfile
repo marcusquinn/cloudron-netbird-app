@@ -1,5 +1,6 @@
 FROM netbirdio/netbird-server:0.79.0@sha256:d1da0c0179c9e6f2ab7b48be54d06341b11037855a9426b9f2536aa79f13360b AS server
 FROM netbirdio/dashboard:v2.92.0@sha256:fa2d8b02a81761e4d2a22df4041d13316b7635f1e93273eafeb53d4991e55b5a AS dashboard
+FROM netbirdio/reverse-proxy:0.79.0@sha256:f18745746dfc797dfc60418b9c2714671aee0e020317df47fb22f37329c2dd54 AS proxy
 FROM cloudron/base:5.1.0@sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e
 
 LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"
@@ -18,6 +19,10 @@ RUN mkdir -p /app/code/bin
 COPY --from=server /go/bin/netbird-server /app/code/bin/netbird-server
 RUN chmod +x /app/code/bin/netbird-server
 
+COPY --from=proxy /go/bin/netbird-proxy /app/code/bin/netbird-proxy
+COPY scripts/start-proxy.sh /app/code/start-proxy.sh
+RUN chmod +x /app/code/bin/netbird-proxy /app/code/start-proxy.sh
+
 # Copy the independently pinned dashboard release.
 COPY --from=dashboard /usr/share/nginx/html/ /app/code/dashboard/
 
@@ -29,7 +34,7 @@ COPY start.sh /app/code/start.sh
 RUN chmod +x /app/code/start.sh
 
 # Expose dashboard/API HTTP plus the dedicated native TLS transport.
-EXPOSE 8080 33074
+EXPOSE 8080 33074 8443
 
 # Expose STUN UDP port
 EXPOSE 3478/udp

@@ -253,14 +253,15 @@ class SmokeCheck:
             response = self.command(
                 "exec", self.app, "curl", "-sS", "--http2", "--max-redirs", "0",
                 "--max-time", "2", "--resolve", resolve, "--cacert", "/etc/certs/tls_cert.pem",
-                "--request", method, "--output", "/dev/null",
+                *( ["--head"] if method == "HEAD" else ["--request", method] ),
+                "--output", "/dev/null",
                 "--write-out", "%{http_version}\\n%{http_code}\\n%{redirect_url}",
                 *( ["--header", "Host: " + spoofed_host] if spoofed_host else [] ), base + path,
                 check=False,
             )
             if response[0] != 0:
                 raise SmokeError("native dashboard navigation request failed")
-            protocol, status, redirect = response[1].rsplit("\\n", 2)
+            protocol, status, redirect = response[1].rsplit("\n", 2)
             expected = "https://" + DOMAIN + path
             if protocol != "2" or status != "308" or redirect != expected:
                 raise SmokeError("native dashboard navigation did not redirect to canonical HTTPS")

@@ -4,6 +4,7 @@
 
 # Build artifacts
 *.tar.gz
+__pycache__/
 
 # Docker
 *.log

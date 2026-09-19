@@ -139,7 +139,8 @@ AUTH_SECRET=$(cat /app/data/config/.auth_secret)
 # ============================================
 echo "==> Generating NetBird configuration"
 
-NETBIRD_DOMAIN="${CLOUDRON_APP_DOMAIN}"
+# envsubst reads the process environment, not unexported shell variables.
+export NETBIRD_DOMAIN="${CLOUDRON_APP_DOMAIN}"
 NETBIRD_NATIVE_PORT="${NETBIRD_PORT}"
 
 # ============================================
@@ -247,6 +248,19 @@ done
 # - Dashboard is the catch-all on the web listener. Browser navigation to the
 #   native listener is redirected to the configured canonical HTTPS origin.
 
+# Optional unattended-install protection: initialize via an app terminal before
+# any internet caller can claim the first administrator account.
+: >/run/nginx/setup-guard.conf
+if [[ "${NETBIRD_SETUP_LOCAL_ONLY:-false}" == true ]]; then
+    cat >/run/nginx/setup-guard.conf <<'SETUP_GUARD'
+location ~ ^/api/setup(/|$) {
+    allow 127.0.0.1;
+    deny all;
+    proxy_pass http://netbird_server;
+}
+SETUP_GUARD
+fi
+
 cat >/app/data/config/nginx.conf.template <<'NGINX_EOF'
 worker_processes auto;
 pid /run/nginx/nginx.pid;
@@ -312,7 +326,7 @@ http {
 
         # ---- gRPC: Signal + Management ----
         # These need grpc_pass which handles h2c (HTTP/2 cleartext) natively
-        location ~ ^/(signalexchange\.SignalExchange|management\.ManagementService)/ {
+        location ~ ^/(signalexchange\.SignalExchange|management\.(ManagementService|ProxyService))/ {
             grpc_pass grpc://netbird_server;
             grpc_read_timeout 1d;
             grpc_send_timeout 1d;
@@ -329,6 +343,8 @@ http {
             proxy_set_header Host $host;
             proxy_read_timeout 1d;
         }
+
+        include /run/nginx/setup-guard.conf;
 
         # ---- HTTP: API + OAuth2 (embedded IdP) ----
         location ~ ^/(api|oauth2)/ {

@@ -116,6 +116,10 @@ The v1.x packaging had several critical issues identified by tester `timconsidin
 
 ### Future enhancements
 
+The 2.1.0 candidate adds an opt-in bundled proxy and dedicated-IP host bridge.
+See [REVERSE-PROXY.md](REVERSE-PROXY.md) for its explicit trust boundaries,
+provisioning steps, private health endpoint, rollback and qualification scope.
+
 1. **Cloudron OIDC auto-configuration** -- Explore using the NetBird API to auto-register Cloudron as an IdP after first admin login
 2. **LDAP addon** -- Sync Cloudron users to NetBird groups
 3. **JWT group sync** -- Map Cloudron groups to NetBird access control groups automatically
