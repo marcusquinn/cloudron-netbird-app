@@ -41,6 +41,9 @@ bash test/package-test.sh
 git diff --check
 ```
 
+`test/package-test.sh` also pins the matrix references and the local-only smoke
+boundary so a later documentation edit cannot silently remove those guards.
+
 The opt-in container fixture requires Docker, a locally built candidate, and
 the already-local pinned PostgreSQL image. It has a 180-second default runtime
 budget and at most 60 seconds of cleanup; it owns only its generated labeled
