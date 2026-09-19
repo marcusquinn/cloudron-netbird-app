@@ -32,6 +32,17 @@ assert_precedes() {
 	return 0
 }
 
+qualification_contract() {
+	assert_contains README.md 'test/QUALIFICATION.md' || return 1
+	assert_contains PACKAGING-NOTES.md 'test/QUALIFICATION.md' || return 1
+	assert_contains test/QUALIFICATION.md 'Historical observation' || return 1
+	assert_contains test/QUALIFICATION.md 'must not target a production instance' || return 1
+	assert_contains test/QUALIFICATION.md 'No default production target' || return 1
+	assert_contains test/runtime-smoke.py 'choices=("local-docker",)' || return 1
+	assert_contains test/runtime-smoke.py 'production and remote targets are unsupported' || return 1
+	return 0
+}
+
 main() {
 	jq -e '.manifestVersion == 2 and .version == "2.0.18" and .upstreamVersion == "0.79.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
@@ -45,13 +56,7 @@ main() {
 	assert_contains CHANGELOG.md '[2.0.18] - 2026-09-19' || return 1
 	assert_contains SECURITY.md '| 2.0.18      | 0.79.0           | Yes        |' || return 1
 	assert_contains README.md '| Cloudron | v9.1.0+ |' || return 1
-	assert_contains README.md 'test/QUALIFICATION.md' || return 1
-	assert_contains PACKAGING-NOTES.md 'test/QUALIFICATION.md' || return 1
-	assert_contains test/QUALIFICATION.md 'Historical observation' || return 1
-	assert_contains test/QUALIFICATION.md 'must not target a production instance' || return 1
-	assert_contains test/QUALIFICATION.md 'No default production target' || return 1
-	assert_contains test/runtime-smoke.py 'choices=("local-docker",)' || return 1
-	assert_contains test/runtime-smoke.py 'production and remote targets are unsupported' || return 1
+	qualification_contract || return 1
 	assert_contains PUBLISHING.md 'is standing authorization for the managed publication' || return 1
 	assert_contains PUBLISHING.md 'ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
 	jq -e '.versions["2.0.3"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
