@@ -62,6 +62,7 @@ qualification_contract() {
 	assert_contains test/QUALIFICATION.md 'must not target a production instance' || return 1
 	assert_contains test/QUALIFICATION.md 'No default production target' || return 1
 	assert_contains test/runtime-smoke.py 'never publishes images or host ports' || return 1
+	assert_contains REVERSE-PROXY.md 'INGRESS-HARDENING.md' || return 1
 	return 0
 }
 
@@ -69,6 +70,7 @@ assert_optional_sso_contract() {
 	jq -e '.optionalSso == true and .addons.oidc.loginRedirectUri == "/oauth2/callback" and .addons.oidc.logoutRedirectUri == "/oauth2/logout/callback" and .addons.oidc.tokenSignatureAlgorithm == "RS256"' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Optional Cloudron OIDC addon contract failed" || return 1
 	assert_contains start.sh 'Cloudron SSO credentials are available for owner-managed onboarding' || return 1
 	assert_contains start.sh 'incomplete optional OIDC environment; embedded authentication remains available' || return 1
+	assert_contains README.md 'SSO-SWITCH.md' || return 1
 	if grep -Fq 'api/identity-providers' "${ROOT_DIR}/start.sh"; then
 		fail "Startup must not register an identity provider" || return 1
 	fi
@@ -100,8 +102,6 @@ main() {
 	jq -e '.udpPorts.STUN_PORT.containerPort == null' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "STUN must use the selected external port inside the container" || return 1
 	jq -e '.addons.tls == {} and .tcpPorts.NETBIRD_PORT.defaultValue == 33073 and .tcpPorts.NETBIRD_PORT.containerPort == 33074 and .tcpPorts.NETBIRD_PORT.enabledByDefault == true' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Native client transport must use the Cloudron TLS addon and dedicated container port" || return 1
 	assert_optional_sso_contract || return 1
-	assert_contains README.md 'SSO-SWITCH.md' || return 1
-	assert_contains REVERSE-PROXY.md 'INGRESS-HARDENING.md' || return 1
 	assert_contains start.sh 'cp -a /app/code/dashboard/. /run/dashboard/' || return 1
 	assert_contains start.sh 'envsubst "' || return 1
 	assert_contains start.sh 'grep -RIlZ -- "AUTH_SUPPORTED_SCOPES" /run/dashboard' || return 1
