@@ -64,6 +64,11 @@ state. It may create the local lock file. Add `--apply` to the same command only
 after reviewing its scope. A one-pass local lock prevents overlapping invocations
 on the same state file; it does not coordinate different operator machines.
 
+The first apply additionally requires `--initialize` to create ownership state.
+Remove that flag from later invocations and any schedule. A missing state file
+then stops apply instead of silently forgetting ownership/tombstones. Restore
+the protected backup after state loss; do not initialize again as a workaround.
+
 Previously active connector users are not silently adopted. Inspect them and use
 `--adopt-existing` explicitly for bootstrap when identity provenance is known.
 Review all such accounts before adoption: prior username reuse cannot be proven

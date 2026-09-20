@@ -301,6 +301,7 @@ def main():
     for name in ('cloudron-url', 'netbird-url', 'app-id', 'provider-id', 'client-id', 'recovery-owner-id', 'state'):
         parser.add_argument('--' + name, required=True)
     parser.add_argument('--apply', action='store_true')
+    parser.add_argument('--initialize', action='store_true', help='Explicitly create first ownership state; never use for recovery')
     parser.add_argument('--adopt-existing', action='store_true', help='Explicitly bind existing active connector users on bootstrap')
     parser.add_argument('--netbird-auth', choices=('Bearer', 'Token'), default='Token')
     args = parser.parse_args()
@@ -320,6 +321,10 @@ def main():
     descriptor = os.open(str(path) + '.lock', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     with os.fdopen(descriptor, 'w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if args.initialize and (not args.apply or path.exists()):
+            raise ValueError('Initialization requires apply and an absent state file')
+        if args.apply and not path.exists() and not args.initialize:
+            raise ValueError('Ownership state missing; initialize explicitly or restore its protected backup')
         result = reconcile(cloudron, netbird, State(path, identity), args.apply, args.adopt_existing)
         print(json.dumps(result))
         return 1 if result['source_unavailable'] else 0
