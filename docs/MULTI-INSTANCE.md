@@ -1,5 +1,7 @@
 # Multiple NetBird instances on one Cloudron
 
+Command and source-file paths below are relative to the repository root.
+
 Start each organisation with a private mesh. Public reverse-proxy ingress is a
 separate, optional decision; it is not required for remote access between peers.
 Verify the installed package version and assigned ports before provisioning.
@@ -80,7 +82,7 @@ or host ingress configuration; preserve those separately. Have recovery access
 before host network changes and avoid concurrent port provisioning.
 
 Use [REVERSE-PROXY.md](REVERSE-PROXY.md) for the current one-proxy topology and
-[test/QUALIFICATION.md](test/QUALIFICATION.md) for evidence boundaries. Passing a
+[qualification evidence](../test/QUALIFICATION.md) for evidence boundaries. Passing a
 single-instance live smoke test is not proof of multi-instance isolation, full
 restore, certificate renewal, host reboot or platform-upgrade behaviour. Those
 operations require their own bounded tests and maintenance approval. This guide

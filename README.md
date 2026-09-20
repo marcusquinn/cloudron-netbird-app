@@ -18,7 +18,8 @@ NetBird connects devices into a secure peer-to-peer WireGuard mesh network. The 
 
 ## What this package provides
 
-This Cloudron app packages the **NetBird combined server** (v0.77.0+), which includes:
+This app packages the **NetBird combined server**. See `CloudronManifest.json`
+for the pinned upstream version. It includes:
 
 - **Management API** -- peer registry, ACLs, setup keys, network routes
 - **Signal server** -- WebRTC ICE negotiation for P2P connection setup
@@ -27,13 +28,21 @@ This Cloudron app packages the **NetBird combined server** (v0.77.0+), which inc
 - **Embedded IdP** -- built-in user management (Dex) with `/setup` onboarding page
 - **Dashboard** -- web UI for administration
 - **Optional Reverse Proxy** -- public HTTPS services through mesh peers, using
-  the [single-VPS second-IP setup](REVERSE-PROXY.md). Disabled by default.
+  the [single-VPS second-IP setup](docs/REVERSE-PROXY.md). Disabled by default.
 
 NetBird clients connect to this server to join the mesh.
 
-For multiple brands or app instances, see [multi-instance setup and security](MULTI-INSTANCE.md).
+For multiple brands, see [multi-instance security](docs/MULTI-INSTANCE.md).
 Private meshes can share the primary IP with unique ports; the optional public
 proxy host helper currently supports only one ingress instance per host.
+
+See the [documentation index](docs/README.md) and
+[Cloudron integration boundaries](docs/CLOUDRON-INTEGRATION.md). SSO, app
+entitlement, mesh authorization and Cloudron VPN protection are separate controls.
+
+The [opt-in access reconciler](docs/ACCESS-SYNC.md) uses Cloudron's effective
+user/group permissions for the configured SSO provider. It is an operator tool;
+an app update does not enable background synchronization or migrate existing peers.
 
 ## Requirements
 
@@ -98,13 +107,13 @@ The `/setup` page is only accessible when no users exist. After creating the fir
 Cloudron's addon remains an install-time opt-in with `optionalSso: true` and
 `--no-sso`. Existing installs can also switch Cloudron login on/off through the
 supported custom OIDC client API, without changing their install-time flag or
-migrating peers. See [SSO switching and recovery](SSO-SWITCH.md). Updates preserve
+migrating peers. See [SSO switching and recovery](docs/SSO-SWITCH.md). Updates preserve
 embedded login; registration is never automatic at startup.
 
 ### Safe onboarding order
 
 1. Choose one onboarding path: the optional addon instructions below for a new
-   install, or the managed [SSO switch](SSO-SWITCH.md) for an existing or new app.
+   install, or the managed [SSO switch](docs/SSO-SWITCH.md) for another app.
    Do not register two connectors for the same integration. No reinstall is
    required for the managed path on a platform supporting custom OIDC clients.
 2. Open NetBird, complete `/setup`, and verify the embedded owner can sign out
@@ -310,7 +319,9 @@ cloudron-netbird-app/
   start.sh                 # Runtime entry point (config generation, process launch)
   supervisord.conf         # Process management (nginx + netbird-server)
   logo.png                 # App icon (256x256)
-  PACKAGING-NOTES.md       # Architecture decisions, lessons learned, testing plan
+  AGENTS.md                # AI entrypoint and critical package contracts
+  docs/                    # Architecture, operator and publishing guides
+  .agents/                 # AI-specific working instructions
   CHANGELOG.md             # Version history
   CONTRIBUTING.md          # Contribution guidelines
   LICENSE                  # MIT
@@ -328,7 +339,8 @@ cloudron-netbird-app/
    TURN cannot replace NetBird's embedded relay/STUN because its shared-secret
    credentials do not map to NetBird's static external-server configuration.
 3. **Reverse Proxy needs separate ingress**: Cloudron's normal HTTPS endpoint
-   cannot provide raw TLS passthrough. The optional [second-IP host bridge](REVERSE-PROXY.md)
+   cannot provide raw TLS passthrough. The optional
+   [second-IP host bridge](docs/REVERSE-PROXY.md)
    supports HTTPS services on one VPS without modifying platform nginx. It is
    administrator-managed host configuration, not an automatic Cloudron feature.
 4. **Single account mode**: All users join the same network. This suits most

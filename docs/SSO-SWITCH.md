@@ -1,5 +1,8 @@
 # Optional Cloudron SSO: new and existing installations
 
+Run commands from the repository root. Cloudron app entitlement and VPN-provider
+support have separate [integration boundaries](CLOUDRON-INTEGRATION.md).
+
 New installs retain Cloudron's optional SSO checkbox (`optionalSso: true`) and
 `--no-sso`. Complete and test embedded owner login first. The install-time addon
 is one onboarding path; it is not necessary to rewrite an existing app's SSO

@@ -4,6 +4,7 @@
 
 | App Version | Upstream NetBird | Supported  |
 |-------------|------------------|-----------:|
+| 2.3.0       | 0.79.0           | Yes        |
 | 2.2.0       | 0.79.0           | Yes        |
 | 2.1.0       | 0.79.0           | Yes        |
 | 2.0.18      | 0.79.0           | Yes        |
@@ -46,10 +47,18 @@ in NetBird itself, please report to the
 
 ## Security Measures
 
-Optional public ingress uses the separate [hardening profile](INGRESS-HARDENING.md),
+Optional public ingress uses the [hardening profile](docs/INGRESS-HARDENING.md),
 not Cloudron's HTTP proxy protection. Existing-install SSO uses the explicit
-[managed switch](SSO-SWITCH.md), with preserved recovery login and new-user approval.
+[managed switch](docs/SSO-SWITCH.md), retaining recovery login and user approval.
 Disabling new SSO authorization does not itself revoke existing sessions or peers.
+
+Read [identity and VPN integration boundaries](docs/CLOUDRON-INTEGRATION.md)
+before changing access synchronization, device ownership or protected-app routing.
+
+The [access reconciler](docs/ACCESS-SYNC.md) is explicitly opt-in. Its normal
+no-change path was observed; live revocation and outage scenarios were not run
+for 2.3.0. Qualify them before unattended enforcement. It does not migrate or
+revoke embedded-owner peers, and an app update does not start a sync service.
 
 This package implements the following security measures:
 

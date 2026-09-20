@@ -1,5 +1,7 @@
 # Public HTTPS ingress protection
 
+Source-file paths below are relative to the repository root.
+
 The optional proxy has its own protection path; it is not an unfiltered port and
 does not copy Cloudron's generated firewall/nginx rules. Keep ordinary SSH,
 desktop/file access and administration private on the mesh.

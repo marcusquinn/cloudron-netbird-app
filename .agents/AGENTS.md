@@ -3,6 +3,12 @@
 This directory contains project-specific agent context. The [aidevops](https://aidevops.sh)
 framework is loaded separately via the global config (`~/.aidevops/agents/`).
 
+Read the [root package contract](../AGENTS.md), then the task-relevant guides in
+the [documentation index](../docs/README.md). This directory is AI-only; do not
+duplicate operator procedures here or add standalone operator guides at root.
+For identity, permission or VPN changes, load
+[Cloudron integration boundaries](../docs/CLOUDRON-INTEGRATION.md) first.
+
 ## Purpose
 
 Files in `.agents/` provide project-specific instructions that AI assistants
@@ -29,9 +35,10 @@ Each file is read on demand by AI assistants when relevant to the task.
 
 ## Security
 
-This is a Cloudron app packaging project for NetBird. No AI/LLM dependencies. Security considerations are container-focused:
+This package has container, identity and optional host-network security boundaries:
 
-- **Dockerfile**: Follow least-privilege principles, pin base image versions, avoid running as root
+- **Dockerfile**: Pin base images. Supervisor retains required startup privileges;
+  managed nginx, NetBird server and proxy processes run unprivileged.
 - **Network**: NetBird is a networking tool — ensure no credentials are baked into images
 - **Cloudron addons**: Use Cloudron's addon system for secrets, not environment variables in manifests
 
