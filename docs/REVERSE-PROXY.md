@@ -1,5 +1,8 @@
 # Optional single-VPS Reverse Proxy
 
+Run commands from the repository root. This public ingress is not Cloudron's
+native VPN-protection feature; see [integration boundaries](CLOUDRON-INTEGRATION.md).
+
 The package bundles `netbird-proxy` 0.79.0. This is an opt-in,
 administrator-managed deployment, not a Cloudron platform feature. No second
 VPS is required, but a **second public IPv4** and root SSH access are required.

@@ -2,9 +2,20 @@
 
 ## Project Overview
 
-Cloudron app package for [NetBird](https://netbird.io) v0.65.3+ -- a self-hosted
+Cloudron app package for [NetBird](https://netbird.io) -- a self-hosted
 WireGuard mesh VPN. It packages the **combined server** binary (`netbird-server`)
 with an internal nginx proxy that separates web and native client traffic.
+
+The root manifest and version catalog define exact versions. Start with the
+[documentation index](docs/README.md). Human/operator guides belong in `docs/`;
+AI-only working instructions belong in `.agents/`. Keep conventional root
+entrypoints and update package checks and relative links when moving guides.
+
+Before auth, group or routing changes, read
+[Cloudron integration boundaries](docs/CLOUDRON-INTEGRATION.md): custom OIDC
+does not inherit app ACLs; username is not immutable identity; owner/setup-key
+peers need migration; Cloudron 10.0.5 VPN protection accepts only OpenVPN.
+Do not mark planned synchronization or provider support as implemented.
 
 ## Architecture
 
@@ -20,7 +31,7 @@ with an internal nginx proxy that separates web and native client traffic.
 
 ### Multiple app instances
 
-Read [MULTI-INSTANCE.md](MULTI-INSTANCE.md) before planning another brand or ingress.
+Read [multi-instance guidance](docs/MULTI-INSTANCE.md) before adding a brand.
 Private meshes share the primary IP with unique native/STUN ports. The current
 host proxy helper is single-instance; additional IPs alone do not enable reuse.
 Preserve organisation boundaries and require separate multi-instance qualification.
@@ -39,10 +50,10 @@ Reference: https://docs.netbird.io/selfhosted/configuration-files
 The embedded IdP (Dex) provides first-owner setup and token issuance. Keep recovery
 login tested before adding Cloudron OIDC. New installs retain the optional addon;
 existing no-SSO installs can use the supported custom-client path in
-[SSO-SWITCH.md](SSO-SWITCH.md), without changing Cloudron's install-time flag.
+[SSO switching](docs/SSO-SWITCH.md), without changing Cloudron's install-time flag.
 Preserve client/connector IDs across toggles and require new-user approval.
 Public ingress protection and its separate host-update lifecycle are documented
-in [INGRESS-HARDENING.md](INGRESS-HARDENING.md).
+in [ingress hardening](docs/INGRESS-HARDENING.md).
 
 Do not auto-register the connector at startup. NetBird v0.79.0 requires an
 authenticated owner for `/api/identity-providers`, and startup must not persist
@@ -89,7 +100,7 @@ Timeouts must be `1d` for gRPC and WebSocket. `grpc_socket_keepalive on` is requ
 | `Dockerfile` | Downloads netbird-server binary + dashboard static files |
 | `start.sh` | Server/nginx config plus ephemeral dashboard runtime substitution |
 | `supervisord.conf` | Process management (nginx on 8080/33074, netbird-server on 80) |
-| `PACKAGING-NOTES.md` | Detailed architecture notes, lessons learned, testing plan |
+| `docs/PACKAGING-NOTES.md` | Architecture history, lessons and testing plan |
 | `CHANGELOG.md` | Version history with breaking changes documented |
 
 ## Secrets (generated at runtime, persisted in `/app/data/config/`)
@@ -132,7 +143,7 @@ See README.md Testing Checklist for the full list.
 - Cloudron OIDC registration is intentionally owner-managed; safe startup has no
   least-privilege connector bootstrap credential
 - Optional single-VPS Reverse Proxy uses a second-IP host bridge, not Cloudron
-  HTTPS. See REVERSE-PROXY.md. Trust the dedicated SNAT IP /32, never the shared
+  HTTPS. See docs/REVERSE-PROXY.md. Trust the dedicated SNAT IP /32, never the shared
   Docker gateway: Cloudron masquerades intra-bridge traffic.
 - Cloudron TURN uses an incompatible relay credential model; built-in
   relay/STUN are used

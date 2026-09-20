@@ -57,12 +57,12 @@ assert_catalog_publisher_contract() {
 
 qualification_contract() {
 	assert_contains README.md 'test/QUALIFICATION.md' || return 1
-	assert_contains PACKAGING-NOTES.md 'test/QUALIFICATION.md' || return 1
+	assert_contains docs/PACKAGING-NOTES.md 'test/QUALIFICATION.md' || return 1
 	assert_contains test/QUALIFICATION.md 'Historical observation' || return 1
 	assert_contains test/QUALIFICATION.md 'must not target a production instance' || return 1
 	assert_contains test/QUALIFICATION.md 'No default production target' || return 1
 	assert_contains test/runtime-smoke.py 'never publishes images or host ports' || return 1
-	assert_contains REVERSE-PROXY.md 'INGRESS-HARDENING.md' || return 1
+	assert_contains docs/REVERSE-PROXY.md 'INGRESS-HARDENING.md' || return 1
 	return 0
 }
 
@@ -81,7 +81,7 @@ main() {
 	jq -e '.manifestVersion == 2 and .version == "2.2.0" and .upstreamVersion == "0.79.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
-	[[ -f "${ROOT_DIR}/PUBLISHING.md" ]] || fail "PUBLISHING.md is missing" || return 1
+	[[ -f "${ROOT_DIR}/docs/PUBLISHING.md" ]] || fail "Publishing guide is missing" || return 1
 	[[ -f "${ROOT_DIR}/DESIGN.md" ]] || fail "DESIGN.md is missing" || return 1
 	[[ -f "${ROOT_DIR}/media/hero.png" ]] || fail "media/hero.png is missing" || return 1
 	jq -e '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Version catalog contract failed" || return 1
@@ -91,8 +91,8 @@ main() {
 	assert_contains SECURITY.md '| 2.0.18      | 0.79.0           | Yes        |' || return 1
 	assert_contains README.md '| Cloudron | v9.1.0+ |' || return 1
 	qualification_contract || return 1
-	assert_contains PUBLISHING.md 'is standing authorization for the managed publication' || return 1
-	assert_contains PUBLISHING.md 'ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
+	assert_contains docs/PUBLISHING.md 'is standing authorization for the managed publication' || return 1
+	assert_contains docs/PUBLISHING.md 'ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
 	jq -e '.versions["2.0.3"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	assert_contains Dockerfile 'netbirdio/netbird-server:0.79.0@sha256:d1da0c0179c9e6f2ab7b48be54d06341b11037855a9426b9f2536aa79f13360b AS server' || return 1
 	assert_contains Dockerfile 'netbirdio/dashboard:v2.92.0@sha256:fa2d8b02a81761e4d2a22df4041d13316b7635f1e93273eafeb53d4991e55b5a AS dashboard' || return 1

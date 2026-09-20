@@ -34,4 +34,4 @@ upstream image remains visually unmodified.
   than deleting it: the upstream API has no provider-enabled/hidden field, and
   connector identity must remain stable. Its allowed Cloudron callback is parked,
   so new SSO authorization is rejected. **Continue with Email** stays available;
-  existing sessions are not presented as revoked. See `SSO-SWITCH.md`.
+  existing sessions are not presented as revoked. See `docs/SSO-SWITCH.md`.

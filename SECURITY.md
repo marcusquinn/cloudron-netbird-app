@@ -46,10 +46,13 @@ in NetBird itself, please report to the
 
 ## Security Measures
 
-Optional public ingress uses the separate [hardening profile](INGRESS-HARDENING.md),
+Optional public ingress uses the [hardening profile](docs/INGRESS-HARDENING.md),
 not Cloudron's HTTP proxy protection. Existing-install SSO uses the explicit
-[managed switch](SSO-SWITCH.md), with preserved recovery login and new-user approval.
+[managed switch](docs/SSO-SWITCH.md), retaining recovery login and user approval.
 Disabling new SSO authorization does not itself revoke existing sessions or peers.
+
+Read [identity and VPN integration boundaries](docs/CLOUDRON-INTEGRATION.md)
+before changing access synchronization, device ownership or protected-app routing.
 
 This package implements the following security measures:
 

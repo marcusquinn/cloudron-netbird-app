@@ -1,5 +1,7 @@
 # Cloudron community publishing
 
+All command and package-file paths below are relative to the repository root.
+
 `CloudronVersions.json` is the public package catalog. Merging a completed
 package update to `main` is standing authorization for the managed publication
 workflow to build and publish that manifest version. Never hand-write an image

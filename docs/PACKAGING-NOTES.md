@@ -1,5 +1,9 @@
 # NetBird Cloudron App - Packaging Notes
 
+Historical architecture and implementation lessons. For current integration
+boundaries, read [Cloudron access integration](CLOUDRON-INTEGRATION.md).
+Exact released versions are defined by the root manifest and version catalog.
+
 ## Feasibility Assessment
 
 **Overall: Medium complexity, achievable.**
@@ -93,7 +97,7 @@ configuration](https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-c
 
 The reproducible status, provenance requirements, cleanup ownership, and safe
 entrypoints for these cases are maintained in
-[`test/QUALIFICATION.md`](test/QUALIFICATION.md). Historical observations are
+[`test/QUALIFICATION.md`](../test/QUALIFICATION.md). Historical observations are
 not a substitute for a current candidate run or production qualification.
 
 1. **Embedded IdP flow** -- `/setup` page creates admin, `/oauth2/token` issues tokens, dashboard login works
