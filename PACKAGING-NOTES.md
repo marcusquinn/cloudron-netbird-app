@@ -36,14 +36,23 @@ Key design decisions:
 |-------|---------|-------------------|
 | `postgresql` | Database | `CLOUDRON_POSTGRESQL_*` env vars -> `server.store.dsn` in config.yaml |
 | `localstorage` | Persistent data | `/app/data/` for config, encryption key, auth secret |
+| `oidc` | Optional Cloudron SSO client | Install-time credentials for manual owner-managed registration; callback `/oauth2/callback` |
 | `tls` | Native TLS certificate | Cloudron certificate files on nginx port 33074 |
 
 ### Addons NOT used (and why)
 
 | Addon | Why not |
 |-------|---------|
-| `oidc` | NetBird's embedded IdP handles initial auth. Cloudron OIDC can be added post-setup via the dashboard, but the manifest doesn't require it. Set `optionalSso: true` so users can choose. |
 | `turn` | NetBird's combined server already supplies relay/STUN. Cloudron TURN expects time-limited credentials derived from its shared secret, while NetBird's external STUN/TURN entries accept static credentials; advertising the addon directly would fail authentication. |
+
+`optionalSso: true` makes the declared OIDC addon an installation choice. The
+Cloudron SSO flag cannot be changed after installation, so a `--no-sso` instance
+continues to use embedded auth across updates. NetBird v0.79.0 exposes
+authenticated `/api/identity-providers` CRUD, but startup has no owner token.
+Automatic registration is therefore intentionally excluded: it would require a
+persisted privileged token and could race or overwrite an owner-managed
+connector. Startup only reports whether a complete optional OIDC environment is
+available and never logs or persists its values.
 
 ### nginx routing (critical)
 
@@ -98,7 +107,11 @@ not a substitute for a current candidate run or production qualification.
 7. **NAT traversal** -- Peers behind NAT can connect via the built-in relay
 8. **Backup/restore** -- PostgreSQL + `/app/data/` backup captures all state
 9. **Memory usage** -- Monitor actual usage; 512MB may need adjustment
-10. **(Optional) Cloudron SSO** -- Adding Cloudron as external OIDC provider via dashboard
+10. **(Optional) Cloudron SSO** -- On isolated staging, add Cloudron as a Generic
+    OIDC provider, verify callback/login and a denied or pending user, then prove
+    embedded-owner login and setup-key peer enrolment during IdP outage and after
+    deleting the connector. Never infer identity linking from matching email:
+    embedded and connector identities have different NetBird user IDs.
 
 ### Lessons learned from v1.x
 
@@ -120,7 +133,9 @@ The 2.1.0 candidate adds an opt-in bundled proxy and dedicated-IP host bridge.
 See [REVERSE-PROXY.md](REVERSE-PROXY.md) for its explicit trust boundaries,
 provisioning steps, private health endpoint, rollback and qualification scope.
 
-1. **Cloudron OIDC auto-configuration** -- Explore using the NetBird API to auto-register Cloudron as an IdP after first admin login
+1. **Cloudron OIDC auto-configuration** -- Reconsider only if NetBird adds a
+   least-privilege bootstrap API with compare-and-set connector semantics; never
+   persist an owner PAT solely for startup registration
 2. **LDAP addon** -- Sync Cloudron users to NetBird groups
 3. **JWT group sync** -- Map Cloudron groups to NetBird access control groups automatically
 4. **Live client smoke coverage** -- Automate setup-key creation and real client

@@ -29,7 +29,13 @@ Reference: https://docs.netbird.io/selfhosted/configuration-files
 
 ### Auth flow: Embedded IdP first, external OIDC second
 
-The embedded IdP (Dex) provides the `/setup` page for first-run admin account creation and the `/oauth2/*` endpoints for token issuance. Cloudron OIDC is added **after** initial setup via the dashboard UI. This avoids the Catch-22 where you need to log in to configure the IdP you need to log in with.
+The embedded IdP (Dex) provides the `/setup` page for first-run admin account creation and the `/oauth2/*` endpoints for token issuance. Cloudron OIDC is an install-time optional addon and is added **after** initial setup via the dashboard UI. This avoids the Catch-22 where you need to log in to configure the IdP you need to log in with. Cloudron cannot enable SSO later on an installation created with `--no-sso`; updates must preserve that embedded-only mode.
+
+Do not auto-register the connector at startup. NetBird v0.79.0 requires an
+authenticated owner for `/api/identity-providers`, and startup must not persist
+an owner PAT, overwrite an existing connector, or log the client secret.
+Embedded and external identities remain distinct even when email matches; never
+silently link or promote an external identity.
 
 ### STUN port: UDP not TCP
 
@@ -110,7 +116,8 @@ See README.md Testing Checklist for the full list.
 
 ## Known Issues / Future Work
 
-- Cloudron OIDC auto-registration not implemented (manual dashboard setup required)
+- Cloudron OIDC registration is intentionally owner-managed; safe startup has no
+  least-privilege connector bootstrap credential
 - Optional single-VPS Reverse Proxy uses a second-IP host bridge, not Cloudron
   HTTPS. See REVERSE-PROXY.md. Trust the dedicated SNAT IP /32, never the shared
   Docker gateway: Cloudron masquerades intra-bridge traffic.

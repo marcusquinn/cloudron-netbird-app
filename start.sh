@@ -66,6 +66,29 @@ validate_env() {
 
 validate_env || exit 1
 
+oidc_vars=(
+    "CLOUDRON_OIDC_ISSUER"
+    "CLOUDRON_OIDC_CLIENT_ID"
+    "CLOUDRON_OIDC_CLIENT_SECRET"
+)
+oidc_vars_present=0
+for var in "${oidc_vars[@]}"; do
+    if [[ -n "${!var:-}" ]]; then
+        oidc_vars_present=$((oidc_vars_present + 1))
+    fi
+done
+
+if [[ ${oidc_vars_present} -eq 0 ]]; then
+    echo "==> Cloudron SSO is not enabled; embedded authentication remains available"
+elif [[ ${oidc_vars_present} -eq ${#oidc_vars[@]} ]]; then
+    # Registration deliberately remains owner-initiated. Startup has no owner
+    # token and must never create connectors, merge identities, or log secrets.
+    echo "==> Cloudron SSO credentials are available for owner-managed onboarding"
+else
+    echo "WARNING: Cloudron supplied an incomplete optional OIDC environment; embedded authentication remains available" >&2
+fi
+unset oidc_vars oidc_vars_present var
+
 # ============================================
 # PHASE 1: First-Run Detection
 # ============================================
