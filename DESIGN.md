@@ -25,3 +25,8 @@ upstream image remains visually unmodified.
 - Native client transport stays on the selected TCP port. The redirect is not a
   substitute for a client `--management-url` and does not change gRPC, relay,
   WebSocket, REST API, or OAuth routing.
+- First-run authentication shows `/setup` before any external-provider choice.
+  After the owner adds Cloudron OIDC, the login screen keeps **Continue with
+  Email** as the recovery path and adds a clearly named **Cloudron** button.
+- Do not visually imply that matching Cloudron and embedded email addresses are
+  one identity. Role assignment and approval remain explicit in **Team > Users**.

@@ -19,6 +19,11 @@
   "addons": {
     "localstorage": {},
     "postgresql": {},
+    "oidc": {
+      "loginRedirectUri": "/oauth2/callback",
+      "logoutRedirectUri": "/oauth2/logout/callback",
+      "tokenSignatureAlgorithm": "RS256"
+    },
     "tls": {}
   },
   "tcpPorts": {
@@ -51,7 +56,7 @@
     "networking",
     "security"
   ],
-  "postInstallMessage": "NetBird is running. Visit the app URL to access the dashboard.\n\nOn first run, you will see the setup page where you can create your admin account.\n\nConnect clients with `netbird up --management-url https://${CLOUDRON_APP_DOMAIN}:${NETBIRD_PORT} --setup-key YOUR_SETUP_KEY`. Keep TCP port ${NETBIRD_PORT} enabled and accessible for native client traffic.\n\nUDP port ${STUN_PORT} must be accessible from your NetBird clients for NAT traversal.\n\n<sso>Cloudron SSO can be added as an external identity provider via Settings > Identity Providers in the NetBird dashboard after initial setup.</sso>",
+  "postInstallMessage": "NetBird is running. Visit the app URL to access the dashboard.\n\nOn first run, create and test the embedded owner account before adding another login method.\n\nConnect clients with `netbird up --management-url https://${CLOUDRON_APP_DOMAIN}:${NETBIRD_PORT} --setup-key YOUR_SETUP_KEY`. Keep TCP port ${NETBIRD_PORT} enabled and accessible for native client traffic.\n\nUDP port ${STUN_PORT} must be accessible from your NetBird clients for NAT traversal.\n\n<sso>Cloudron SSO credentials are available to configure manually in NetBird under Settings > Identity Providers. Keep embedded owner access as the recovery login.</sso>",
   "configurePath": "/peers",
   "changelog": "file://CHANGELOG",
   "iconUrl": "https://raw.githubusercontent.com/marcusquinn/cloudron-netbird-app/main/logo.png",

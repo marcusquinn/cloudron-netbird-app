@@ -91,24 +91,57 @@ The `/setup` page is only accessible when no users exist. After creating the fir
 
 ## Adding Cloudron SSO (Optional)
 
-After initial setup, you can add Cloudron as an external identity provider so users can log in with their Cloudron credentials.
+Cloudron SSO is an install-time opt-in. The manifest declares the OIDC addon and
+`optionalSso: true`, so Cloudron can install the app either with SSO credentials
+or with `--no-sso`. Cloudron cannot add authentication to an existing no-SSO
+installation later; updates preserve that installation's embedded login.
 
-The manifest sets `optionalSso: true`, so Cloudron shows an "Enable SSO" toggle during installation. SSO must be enabled at install time (or via reconfigure) for the `CLOUDRON_OIDC_*` environment variables to be available.
+### Safe onboarding order
 
-1. Ensure SSO is enabled for the app (Cloudron dashboard > App Settings > Enable SSO)
-2. Log into the NetBird dashboard with your admin account
-3. Go to **Settings > Identity Providers > Add Identity Provider**
-4. Select **Generic OIDC** and fill in:
-   - **Name**: `Cloudron`
-   - **Issuer**: Run `cloudron exec --app netbird -- printenv CLOUDRON_OIDC_ISSUER`
-   - **Client ID**: Run `cloudron exec --app netbird -- printenv CLOUDRON_OIDC_CLIENT_ID`
-   - **Client Secret**: Run `cloudron exec --app netbird -- printenv CLOUDRON_OIDC_CLIENT_SECRET`
-5. Save -- the login page will now show a "Cloudron" button alongside local email/password
+1. During installation, enable SSO only if this instance should expose a
+   Cloudron login. For an existing `--no-sso` install, keep using embedded auth;
+   enabling the addon requires a fresh Cloudron app installation and a planned
+   data migration rather than an in-place toggle.
+2. Open NetBird, complete `/setup`, and verify the embedded owner can sign out
+   and back in. Keep that owner as the emergency login.
+3. Log in as the embedded owner and open **Settings > Identity Providers > Add
+   Identity Provider**. Select **Generic OIDC**.
+4. In a trusted administrator terminal, read the three addon values separately:
 
-**Notes**:
-- Local email/password authentication remains available alongside Cloudron SSO
-- Multiple identity providers can coexist (Cloudron + Google + Keycloak, etc.)
-- NetBird supports JWT group sync for mapping Cloudron groups to access control groups
+   ```bash
+   cloudron exec --app netbird -- printenv CLOUDRON_OIDC_ISSUER
+   cloudron exec --app netbird -- printenv CLOUDRON_OIDC_CLIENT_ID
+   cloudron exec --app netbird -- printenv CLOUDRON_OIDC_CLIENT_SECRET
+   ```
+
+   Treat the final value as a secret: do not paste it into tickets, logs, or
+   screenshots.
+5. Enter **Name** `Cloudron`, the issuer, client ID, and client secret. The
+   Cloudron addon is registered for NetBird's exact callback
+   `https://<app-domain>/oauth2/callback` and logout callback
+   `https://<app-domain>/oauth2/logout/callback`.
+6. Save the provider. In a private browser window, confirm the **Cloudron**
+   button completes login before announcing SSO to users. Then sign back in with
+   the embedded owner to prove fallback access still works.
+
+NetBird v0.79.0 intentionally requires an authenticated owner to create the
+connector. This package does not save an owner token or auto-register on startup:
+doing so could overwrite a differently configured provider, expose the client
+secret, or silently change identity ownership.
+
+### Identity and recovery rules
+
+- A Cloudron identity and an embedded identity are distinct even when their
+  email addresses match. NetBird does not merge them or promote the external
+  identity to owner. Review the new user in **Team > Users** and grant only the
+  intended role; new external users can require owner approval.
+- Keep **Continue with Email** tested. An unavailable Cloudron IdP must not
+  remove embedded owner access or affect setup-key peer enrolment.
+- To roll back, first verify the embedded owner login, then delete only the
+  **Cloudron** connector under **Settings > Identity Providers**. This does not
+  delete the embedded owner, peers, setup keys, or network data.
+- Multiple external providers can coexist. Enable JWT group sync only after
+  validating Cloudron's `groups` claim and an explicit allow-group policy.
 
 ## Architecture
 
@@ -200,6 +233,7 @@ the linux/amd64 candidate and pull the pinned PostgreSQL 16 fixture first:
 docker build --platform linux/amd64 -t netbird-smoke:candidate .
 docker pull postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20
 python3 test/runtime-smoke.py --image netbird-smoke:candidate
+python3 test/runtime-smoke.py --image netbird-smoke:candidate --cloudron-sso-fixture
 ```
 
 The runner never pulls a candidate automatically. It uses disposable labeled
@@ -212,7 +246,9 @@ Outbound access is needed for NetBird's geolocation database download.
 Fresh startup and restart must pass the manifest health check, setup/config
 requests, dedicated TLS listener and HTTP/2 negotiation checks, stable
 parent/child UID checks, database initialization, and persisted secret/data
-checks. Raw logs,
+checks. The optional SSO fixture supplies an unreachable, synthetic OIDC
+environment and proves that its client secret is not written to generated
+configuration or dashboard assets while embedded setup/restart still pass. Raw logs,
 credentials, and secret fingerprints are withheld.
 The default test deadline is 180 seconds (`--timeout` adjusts it), plus up to 60
 seconds for ownership-checked cleanup on success, failure, or SIGINT/SIGTERM.
@@ -220,7 +256,8 @@ Cleanup failures print the exact owned resource names and label to inspect;
 remove only those resources after confirming that label. SIGKILL or a stopped
 Docker daemon can prevent cleanup. Never use a broad Docker prune as recovery.
 
-This is not a live Cloudron, backup/restore, VPN-client, or SSO test. The fast
+This is not a live Cloudron, backup/restore, VPN-client, or successful external
+SSO login test. The fast
 `bash test/package-test.sh` remains independent of Docker. The only supported
 runtime target is the local Docker fixture; it never discovers a remote host or
 defaults to a production instance. See
@@ -243,7 +280,10 @@ cases.
 - [ ] Backup/restore preserves all state
 - [ ] Memory stays within 512 MB limit
 - [ ] Selected STUN UDP port is accessible from clients
-- [ ] (Optional) Cloudron SSO can be added as external IdP via dashboard
+- [ ] (Optional) Cloudron SSO callback and login work on isolated staging
+- [ ] A denied/pending external user receives no unintended access or owner role
+- [ ] Embedded-owner login and setup-key enrolment work during IdP outage
+- [ ] Deleting only the Cloudron connector restores the pre-SSO login choices
 
 ### Repository Automation Dashboard
 

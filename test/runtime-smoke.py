@@ -18,6 +18,7 @@ import uuid
 POSTGRES = "postgres@sha256:33f923b05f64ca54ac4401c01126a6b92afe839a0aa0a52bc5aeb5cc958e5f20"
 OWNER_LABEL = "io.netbird.cloudron.smoke"
 DOMAIN = "netbird.example.invalid"
+OIDC_FIXTURE_SECRET = "smoke-only-oidc-secret-not-a-credential"
 
 
 class SmokeError(Exception):
@@ -25,8 +26,9 @@ class SmokeError(Exception):
 
 
 class SmokeCheck:
-    def __init__(self, image, timeout):
+    def __init__(self, image, timeout, cloudron_sso_fixture):
         self.image = image
+        self.cloudron_sso_fixture = cloudron_sso_fixture
         self.deadline = time.monotonic() + timeout
         self.stage = "prerequisites"
         self.owner = uuid.uuid4().hex
@@ -141,6 +143,13 @@ class SmokeCheck:
         self.wait(lambda: self.command("exec", self.database, "pg_isready", "-U", "netbird", check=False),
                   "PostgreSQL")
         self.stage = "fresh application startup"
+        sso_options = []
+        if self.cloudron_sso_fixture:
+            sso_options = [
+                "--env", "CLOUDRON_OIDC_ISSUER=https://unavailable.example.invalid",
+                "--env", "CLOUDRON_OIDC_CLIENT_ID=netbird-smoke",
+                "--env", "CLOUDRON_OIDC_CLIENT_SECRET=" + OIDC_FIXTURE_SECRET,
+            ]
         self.create(
             "container", self.app, "--platform", "linux/amd64", "--network", self.network,
             "--network-alias", DOMAIN,
@@ -154,7 +163,7 @@ class SmokeCheck:
             "--env", "CLOUDRON_POSTGRESQL_DATABASE=netbird",
             "--env", "CLOUDRON_POSTGRESQL_PORT=5432",
             "--env", "NETBIRD_PORT=" + str(self.native_external_port),
-            "--env", "STUN_PORT=5349", self.image,
+            *sso_options, "--env", "STUN_PORT=5349", self.image,
             environment=dict(os.environ, CLOUDRON_POSTGRESQL_PASSWORD=self.password),
         )
         self.command("start", self.app)
@@ -207,6 +216,19 @@ class SmokeCheck:
                                   "https://" + DOMAIN, "/run/dashboard", check=False)
         if configured[0] != 0:
             raise SmokeError("dashboard runtime origin was not injected")
+
+    def optional_sso_isolation(self):
+        if not self.cloudron_sso_fixture:
+            return
+        leaked = self.command(
+            "exec", self.app, "grep", "-RFl", OIDC_FIXTURE_SECRET,
+            "/app/data", "/run/dashboard", check=False,
+        )
+        if leaked[0] == 0:
+            raise SmokeError("optional OIDC client secret was persisted into generated assets")
+        logs = self.command("logs", self.app, check=False)
+        if OIDC_FIXTURE_SECRET in logs[1] or OIDC_FIXTURE_SECRET in logs[2]:
+            raise SmokeError("optional OIDC client secret was written to application logs")
 
     def stun_listener(self):
         config = self.command("exec", self.app, "grep", "-F", "--", "- 5349",
@@ -304,6 +326,8 @@ class SmokeCheck:
             raise SmokeError("instance setup state mismatch")
         self.stage = phase + " dashboard configuration"
         self.dashboard_runtime_config()
+        self.stage = phase + " optional SSO isolation"
+        self.optional_sso_isolation()
         self.stage = phase + " STUN listener"
         self.stun_listener()
         self.stage = phase + " native TLS listener"
@@ -376,10 +400,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", required=True, help="locally present candidate image (never pulled automatically)")
     parser.add_argument("--timeout", type=int, default=180, help="overall test budget in seconds (default 180, plus up to 60 for cleanup)")
+    parser.add_argument(
+        "--cloudron-sso-fixture", action="store_true",
+        help="inject unavailable optional OIDC credentials and prove embedded-owner fallback remains isolated",
+    )
     args = parser.parse_args()
     if not 1 <= args.timeout <= 900:
         parser.error("--timeout must be between 1 and 900 seconds")
-    smoke = SmokeCheck(args.image, args.timeout)
+    smoke = SmokeCheck(args.image, args.timeout, args.cloudron_sso_fixture)
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, interrupted)
     status = 0
