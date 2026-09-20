@@ -31,6 +31,10 @@ This Cloudron app packages the **NetBird combined server** (v0.77.0+), which inc
 
 NetBird clients connect to this server to join the mesh.
 
+For multiple brands or app instances, see [multi-instance setup and security](MULTI-INSTANCE.md).
+Private meshes can share the primary IP with unique ports; the optional public
+proxy host helper currently supports only one ingress instance per host.
+
 ## Requirements
 
 | Resource | Minimum |

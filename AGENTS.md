@@ -18,6 +18,13 @@ with an internal nginx proxy that separates web and native client traffic.
 
 ## Critical Design Decisions
 
+### Multiple app instances
+
+Read [MULTI-INSTANCE.md](MULTI-INSTANCE.md) before planning another brand or ingress.
+Private meshes share the primary IP with unique native/STUN ports. The current
+host proxy helper is single-instance; additional IPs alone do not enable reuse.
+Preserve organisation boundaries and require separate multi-instance qualification.
+
 ### Config format: `config.yaml` NOT `management.json`
 
 The combined server (v0.65.0+) uses `config.yaml` with a `server:` top-level key. The old `management.json` format is for the legacy multi-container architecture and **does not enable the embedded IdP**. Using the wrong format was the root cause of the auth failure in v1.x.
