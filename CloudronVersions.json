@@ -1070,6 +1070,80 @@
             "creationDate": "Sun, 20 Sep 2026 03:26:30 GMT",
             "ts": "Sun, 20 Sep 2026 03:26:30 GMT",
             "publishState": "published"
+        },
+        "2.3.0": {
+            "manifest": {
+                "id": "io.netbird.cloudronapp",
+                "title": "NetBird",
+                "author": "Marcus Quinn <marcus@marcusquinn.com>",
+                "description": "Self-hosted WireGuard mesh VPN with SSO, MFA, and granular access controls. Connect devices into a secure peer-to-peer overlay network.",
+                "tagline": "Zero-config WireGuard mesh VPN for teams",
+                "version": "2.3.0",
+                "upstreamVersion": "0.79.0",
+                "healthCheckPath": "/oauth2/.well-known/openid-configuration",
+                "httpPort": 8080,
+                "manifestVersion": 2,
+                "website": "https://netbird.io",
+                "contactEmail": "marcus@marcusquinn.com",
+                "icon": "file://logo.png",
+                "documentationUrl": "https://docs.netbird.io",
+                "minBoxVersion": "9.1.0",
+                "memoryLimit": 536870912,
+                "optionalSso": true,
+                "addons": {
+                    "localstorage": {},
+                    "postgresql": {},
+                    "oidc": {
+                        "loginRedirectUri": "/oauth2/callback",
+                        "logoutRedirectUri": "/oauth2/logout/callback",
+                        "tokenSignatureAlgorithm": "RS256"
+                    },
+                    "tls": {}
+                },
+                "tcpPorts": {
+                    "NETBIRD_PORT": {
+                        "title": "NetBird client transport",
+                        "description": "TLS port for native NetBird management, signal, and relay traffic.",
+                        "defaultValue": 33073,
+                        "containerPort": 33074,
+                        "enabledByDefault": true
+                    },
+                    "PROXY_PORT": {
+                        "title": "Optional reverse-proxy ingress",
+                        "description": "Raw TLS backend for the documented second-IP host bridge. Keep disabled until host firewall protection is installed.",
+                        "defaultValue": 18444,
+                        "containerPort": 8443,
+                        "enabledByDefault": false
+                    }
+                },
+                "udpPorts": {
+                    "STUN_PORT": {
+                        "title": "STUN (NAT traversal)",
+                        "description": "UDP port for STUN NAT traversal. Must be accessible from all NetBird clients.",
+                        "defaultValue": 3478
+                    }
+                },
+                "tags": [
+                    "vpn",
+                    "wireguard",
+                    "mesh",
+                    "networking",
+                    "security"
+                ],
+                "postInstallMessage": "NetBird is running. Visit the app URL to access the dashboard.\n\nOn first run, create and test the embedded owner account before adding another login method.\n\nConnect clients with `netbird up --management-url https://${CLOUDRON_APP_DOMAIN}:${NETBIRD_PORT} --setup-key YOUR_SETUP_KEY`. Keep TCP port ${NETBIRD_PORT} enabled and accessible for native client traffic.\n\nUDP port ${STUN_PORT} must be accessible from your NetBird clients for NAT traversal.\n\n<sso>Cloudron SSO credentials are available to configure manually in NetBird under Settings > Identity Providers. Keep embedded owner access as the recovery login.</sso>",
+                "configurePath": "/peers",
+                "changelog": "* Add opt-in operator reconciliation of Cloudron user/group app access to NetBird SSO-user approval and blocking.\n* Preserve embedded recovery owners, existing peer ownership, other providers and user roles/groups.\n* Retain immutable identity bindings and pending revocation recovery state; default to a non-mutating plan.\n* Move operator guides under docs/ and document native Cloudron VPN-provider limitations.\n* No automatic synchronization service or peer migration is enabled by an app update.\n",
+                "iconUrl": "https://raw.githubusercontent.com/marcusquinn/cloudron-netbird-app/main/logo.png",
+                "packagerName": "Marcus Quinn",
+                "packagerUrl": "https://github.com/marcusquinn",
+                "mediaLinks": [
+                    "https://netbird.io/_next/static/media/centralized-network-management.67616bd3.png"
+                ],
+                "dockerImage": "ghcr.io/marcusquinn/cloudron-netbird-app@sha256:e58fb92d130f9931b3120f13e38c40cd3a0486509e47c9221018a3b180332a58"
+            },
+            "creationDate": "Sun, 20 Sep 2026 05:20:54 GMT",
+            "ts": "Sun, 20 Sep 2026 05:20:54 GMT",
+            "publishState": "published"
         }
     }
 }
