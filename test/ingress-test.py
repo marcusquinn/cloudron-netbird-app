@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Narrow, non-root regression checks for host ingress scope and recovery."""
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -41,6 +43,75 @@ class IngressTest(unittest.TestCase):
         self.assertIn('source 9.9.9.9', text)
         self.assertIn('send-proxy-v2', text)
         self.assertNotIn(' ssl', text)
+
+    def test_protection_defaults_and_limits(self):
+        config = M.validate(dict(self.config))
+        self.assertEqual(config['connections_per_ip'], 64)
+        self.assertEqual(config['connections_per_10s'], 60)
+        for update in (dict(connections_per_ip=0), dict(connections_per_10s=-1),
+                       dict(max_connections=True), dict(max_connections=1, connections_per_ip=2),
+                       dict(deny_cidrs=['0.0.0.0/0']), dict(deny_cidrs=['::/0'])):
+            with self.subTest(update=update), self.assertRaises(ValueError):
+                M.validate(dict(self.config, **update))
+
+    def test_denylist_precedes_established_and_only_targets_public_ingress(self):
+        text = M.rules(dict(self.config, deny_cidrs=['203.0.113.0/24']))
+        self.assertIn('elements = { 203.0.113.0/24 }', text)
+        self.assertIn('iifname "eth0" ip daddr 9.9.9.9 ip saddr @blocked_sources', text)
+        self.assertLess(text.index('ip saddr @blocked_sources'), text.index('ct state established,related'))
+
+    def test_limits_apply_to_tls_bridge_not_native_transport(self):
+        text = M.haproxy(self.config)
+        self.assertIn('conn_rate(10s)', text)
+        self.assertIn('sc0_conn_cur gt 64', text)
+        self.assertIn('sc0_conn_rate gt 60', text)
+        self.assertNotIn('33073', text)
+        self.assertNotIn('3479', text)
+
+    def test_protection_cannot_change_network_identity(self):
+        with self.assertRaises(ValueError):
+            M.protect(self.config, dict(primary_ip='8.8.8.8'))
+
+    def test_proxy_statistics_are_private_and_aggregate(self):
+        self.assertIn('stats socket /run/netbird-ingress/stats.sock mode 600 level user', M.haproxy(self.config))
+        with patch.object(M.socket, 'socket') as factory:
+            connection = factory.return_value.__enter__.return_value
+            connection.recv.side_effect = [b'# pxname,svname,scur,stot,dcon,dses\n'
+                                           b'netbird_tls,FRONTEND,1,80,20,0\n', b'']
+            self.assertEqual(M.proxy_counters()['denied_connections'], 20)
+            connection.sendall.assert_called_once_with(b'show stat\n')
+
+    def test_missing_rejection_counter_fails_closed(self):
+        with patch.object(M.socket, 'socket') as factory:
+            factory.return_value.__enter__.return_value.recv.side_effect = [
+                b'# pxname,svname,scur,stot\nnetbird_tls,FRONTEND,1,80\n', b'']
+            with self.assertRaisesRegex(ValueError, 'incomplete'):
+                M.proxy_counters()
+
+    def test_protection_reload_failure_restores_owned_files(self):
+        config = M.validate(dict(self.config))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            originals = {'config.json': json.dumps(config), 'haproxy.cfg': M.haproxy(config), 'rules.nft': M.rules(config)}
+            for name, text in originals.items():
+                (root / name).write_text(text)
+            failed = False
+
+            def run(*args, **kwargs):
+                nonlocal failed
+                if args[:2] == ('systemctl', 'reload') and not failed:
+                    failed = True
+                    raise subprocess.CalledProcessError(1, args)
+                return subprocess.CompletedProcess(args, 0, stdout='')
+
+            with patch.object(M, 'ROOT', root), patch.object(M, 'preflight'), \
+                 patch.object(M, 'run', side_effect=run), patch.object(M, 'up') as up:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    M.protect(config, dict(connections_per_ip=32))
+                self.assertEqual(up.call_count, 2)
+                self.assertEqual(up.call_args_list[-1].args[0], config)
+            for name, text in originals.items():
+                self.assertEqual((root / name).read_text(), text)
 
     def test_stopped_service_never_reactivated(self):
         with patch.object(M, 'run', return_value=subprocess.CompletedProcess([], 3)), patch.object(M, 'up') as up:

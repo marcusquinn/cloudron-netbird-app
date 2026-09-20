@@ -36,7 +36,13 @@ Reference: https://docs.netbird.io/selfhosted/configuration-files
 
 ### Auth flow: Embedded IdP first, external OIDC second
 
-The embedded IdP (Dex) provides the `/setup` page for first-run admin account creation and the `/oauth2/*` endpoints for token issuance. Cloudron OIDC is an install-time optional addon and is added **after** initial setup via the dashboard UI. This avoids the Catch-22 where you need to log in to configure the IdP you need to log in with. Cloudron cannot enable SSO later on an installation created with `--no-sso`; updates must preserve that embedded-only mode.
+The embedded IdP (Dex) provides first-owner setup and token issuance. Keep recovery
+login tested before adding Cloudron OIDC. New installs retain the optional addon;
+existing no-SSO installs can use the supported custom-client path in
+[SSO-SWITCH.md](SSO-SWITCH.md), without changing Cloudron's install-time flag.
+Preserve client/connector IDs across toggles and require new-user approval.
+Public ingress protection and its separate host-update lifecycle are documented
+in [INGRESS-HARDENING.md](INGRESS-HARDENING.md).
 
 Do not auto-register the connector at startup. NetBird v0.79.0 requires an
 authenticated owner for `/api/identity-providers`, and startup must not persist

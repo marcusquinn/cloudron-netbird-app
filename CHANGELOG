@@ -1,3 +1,9 @@
+[2.2.0]
+* Include optional Cloudron OIDC addon onboarding for new installs.
+* Add owner-operated SSO switching for existing installs without database flag edits or peer migration.
+* Preserve client/connector identities, embedded recovery login and new-user approval across toggles.
+* Add scoped public-ingress connection limits, managed denylist, protection rollback and reporting.
+
 [2.1.0]
 * Add opt-in bundled NetBird Reverse Proxy with dedicated-IP host TLS forwarding.
 * Keep proxy disabled by default and preserve normal Cloudron dashboard/native-client traffic.

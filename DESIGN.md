@@ -30,3 +30,8 @@ upstream image remains visually unmodified.
   Email** as the recovery path and adds a clearly named **Cloudron** button.
 - Do not visually imply that matching Cloudron and embedded email addresses are
   one identity. Role assignment and approval remain explicit in **Team > Users**.
+- The managed switch labels an inactive connector **Cloudron (disabled)** rather
+  than deleting it: the upstream API has no provider-enabled/hidden field, and
+  connector identity must remain stable. Its allowed Cloudron callback is parked,
+  so new SSO authorization is rejected. **Continue with Email** stays available;
+  existing sessions are not presented as revoked. See `SSO-SWITCH.md`.

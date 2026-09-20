@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 2.1.0 candidate
+## [2.2.0] - 2026-09-20
+
+- Include optional new-install Cloudron OIDC onboarding and an explicit managed
+  SSO switch for existing installs using supported custom-client/provider APIs.
+- Preserve client/connector identity, embedded owner recovery and new-user
+  approval. Disabling new SSO authorization does not revoke existing sessions.
+- Add per-source/total ingress connection limits, an owned IPv4 denylist,
+  validated protection updates with rollback, and status/counter reporting.
+- Document HTTP-layer limits, optional reputation integration and host-update
+  requirements separately from the Cloudron app image update.
+
+## [2.1.0] - 2026-09-19
 
 - Bundle the pinned NetBird proxy as an optional unprivileged service.
 - Add a dedicated-IP host bridge with raw TLS, source identity preservation,
@@ -16,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   forwarding source. Disable arbitrary custom proxy ports.
 - Route ProxyService gRPC and optionally restrict initial setup to app-local calls.
 - Add live tests for peer registration, public certificate issuance, proxy traffic,
-  header authentication and forwarded-IP spoof rejection. Not yet catalog-published.
+  header authentication and forwarded-IP spoof rejection.
 
 ## [2.0.18] - 2026-09-19
 
