@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-09-20
+
+- Add an opt-in, one-shot Cloudron access reconciler using the effective
+  user/group app-access API, with explicit apply and existing-user adoption.
+- Bind external subjects to immutable Cloudron IDs; retain ownership tombstones,
+  manual-block safeguards and recoverable pending revocation state.
+- Preserve embedded recovery owners, other providers, existing peer ownership,
+  user roles and NetBird group settings. No scheduler starts automatically.
+- Move six operator guides into `docs/`, add an integration-contract index and
+  update AI entrypoints, links and package checks.
+- Document Cloudron's OpenVPN-only native VPN-provider gate and device migration
+  requirements. Normal reconciliation was observed without authorization or peer
+  changes; synthetic and live revocation scenarios were not run for this release.
+
 ## [2.2.0] - 2026-09-20
 
 - Include optional new-install Cloudron OIDC onboarding and an explicit managed

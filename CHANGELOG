@@ -1,3 +1,10 @@
+[2.3.0]
+* Add opt-in operator reconciliation of Cloudron user/group app access to NetBird SSO-user approval and blocking.
+* Preserve embedded recovery owners, existing peer ownership, other providers and user roles/groups.
+* Retain immutable identity bindings and pending revocation recovery state; default to a non-mutating plan.
+* Move operator guides under docs/ and document native Cloudron VPN-provider limitations.
+* No automatic synchronization service or peer migration is enabled by an app update.
+
 [2.2.0]
 * Include optional Cloudron OIDC addon onboarding for new installs.
 * Add owner-operated SSO switching for existing installs without database flag edits or peer migration.

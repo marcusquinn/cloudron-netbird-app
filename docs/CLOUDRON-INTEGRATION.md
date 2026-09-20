@@ -3,10 +3,12 @@
 ## Status and scope
 
 Cloudron 10.0.5 and NetBird 0.79.0 are the inspected integration baseline.
-Package 2.2.0 supports optional Cloudron SSO and a separately configured public
-proxy. It does **not** implement Cloudron app-permission synchronization or native
-Cloudron VPN-provider registration. The synchronization work in issue #147 is
-in progress; requirements below are not claims of delivered functionality.
+Package 2.3.0 adds an [opt-in access reconciler](ACCESS-SYNC.md) alongside optional
+Cloudron SSO and a separately configured public proxy. The operator must configure
+credentials, state and any schedule explicitly. App updates do not enable it.
+Native Cloudron VPN-provider registration remains unsupported. Normal no-change
+reconciliation was observed; live revocation scenarios were not run for this
+release. The requirements below are not claims of complete production qualification.
 
 ## Four independent boundaries
 

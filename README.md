@@ -40,6 +40,10 @@ See the [documentation index](docs/README.md) and
 [Cloudron integration boundaries](docs/CLOUDRON-INTEGRATION.md). SSO, app
 entitlement, mesh authorization and Cloudron VPN protection are separate controls.
 
+The [opt-in access reconciler](docs/ACCESS-SYNC.md) uses Cloudron's effective
+user/group permissions for the configured SSO provider. It is an operator tool;
+an app update does not enable background synchronization or migrate existing peers.
+
 ## Requirements
 
 | Resource | Minimum |

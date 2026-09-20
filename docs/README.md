@@ -8,6 +8,8 @@ Do not create duplicate root copies of these guides.
 
 - [Cloudron access and VPN integration](CLOUDRON-INTEGRATION.md): verified platform
   contracts, identity boundaries, revocation and migration requirements.
+- [Opt-in access reconciliation](ACCESS-SYNC.md): command, credential/state
+  ownership, scheduling boundaries and unexecuted qualification scenarios.
 - [Packaging architecture and history](PACKAGING-NOTES.md): combined server,
   native transport and historical implementation lessons.
 - [SSO switching](SSO-SWITCH.md): optional addon and existing-install custom client,

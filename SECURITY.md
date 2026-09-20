@@ -4,6 +4,7 @@
 
 | App Version | Upstream NetBird | Supported  |
 |-------------|------------------|-----------:|
+| 2.3.0       | 0.79.0           | Yes        |
 | 2.2.0       | 0.79.0           | Yes        |
 | 2.1.0       | 0.79.0           | Yes        |
 | 2.0.18      | 0.79.0           | Yes        |
@@ -53,6 +54,11 @@ Disabling new SSO authorization does not itself revoke existing sessions or peer
 
 Read [identity and VPN integration boundaries](docs/CLOUDRON-INTEGRATION.md)
 before changing access synchronization, device ownership or protected-app routing.
+
+The [access reconciler](docs/ACCESS-SYNC.md) is explicitly opt-in. Its normal
+no-change path was observed; live revocation and outage scenarios were not run
+for 2.3.0. Qualify them before unattended enforcement. It does not migrate or
+revoke embedded-owner peers, and an app update does not start a sync service.
 
 This package implements the following security measures:
 
