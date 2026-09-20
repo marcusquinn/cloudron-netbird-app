@@ -4,6 +4,8 @@
 
 | App Version | Upstream NetBird | Supported  |
 |-------------|------------------|-----------:|
+| 2.2.0       | 0.79.0           | Yes        |
+| 2.1.0       | 0.79.0           | Yes        |
 | 2.0.18      | 0.79.0           | Yes        |
 | 2.0.17      | 0.78.2           | Yes        |
 | 2.0.16      | 0.78.1           | Yes        |
@@ -43,6 +45,11 @@ in NetBird itself, please report to the
 [upstream project](https://github.com/netbirdio/netbird/security).
 
 ## Security Measures
+
+Optional public ingress uses the separate [hardening profile](INGRESS-HARDENING.md),
+not Cloudron's HTTP proxy protection. Existing-install SSO uses the explicit
+[managed switch](SSO-SWITCH.md), with preserved recovery login and new-user approval.
+Disabling new SSO authorization does not itself revoke existing sessions or peers.
 
 This package implements the following security measures:
 

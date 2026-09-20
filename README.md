@@ -95,17 +95,18 @@ The `/setup` page is only accessible when no users exist. After creating the fir
 
 ## Adding Cloudron SSO (Optional)
 
-Cloudron SSO is an install-time opt-in. The manifest declares the OIDC addon and
-`optionalSso: true`, so Cloudron can install the app either with SSO credentials
-or with `--no-sso`. Cloudron cannot add authentication to an existing no-SSO
-installation later; updates preserve that installation's embedded login.
+Cloudron's addon remains an install-time opt-in with `optionalSso: true` and
+`--no-sso`. Existing installs can also switch Cloudron login on/off through the
+supported custom OIDC client API, without changing their install-time flag or
+migrating peers. See [SSO switching and recovery](SSO-SWITCH.md). Updates preserve
+embedded login; registration is never automatic at startup.
 
 ### Safe onboarding order
 
-1. During installation, enable SSO only if this instance should expose a
-   Cloudron login. For an existing `--no-sso` install, keep using embedded auth;
-   enabling the addon requires a fresh Cloudron app installation and a planned
-   data migration rather than an in-place toggle.
+1. Choose one onboarding path: the optional addon instructions below for a new
+   install, or the managed [SSO switch](SSO-SWITCH.md) for an existing or new app.
+   Do not register two connectors for the same integration. No reinstall is
+   required for the managed path on a platform supporting custom OIDC clients.
 2. Open NetBird, complete `/setup`, and verify the embedded owner can sign out
    and back in. Keep that owner as the emergency login.
 3. Log in as the embedded owner and open **Settings > Identity Providers > Add
@@ -141,9 +142,10 @@ secret, or silently change identity ownership.
   intended role; new external users can require owner approval.
 - Keep **Continue with Email** tested. An unavailable Cloudron IdP must not
   remove embedded owner access or affect setup-key peer enrolment.
-- To roll back, first verify the embedded owner login, then delete only the
-  **Cloudron** connector under **Settings > Identity Providers**. This does not
-  delete the embedded owner, peers, setup keys, or network data.
+- For the managed integration, use its disable operation to retain external
+  identity mapping. Do not delete/recreate an identity-bearing connector as a
+  casual toggle. Retiring a manually configured connector requires a separate
+  external-user/session plan; keep embedded owner recovery tested.
 - Multiple external providers can coexist. Enable JWT group sync only after
   validating Cloudron's `groups` claim and an explicit allow-group policy.
 

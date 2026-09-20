@@ -7,6 +7,7 @@ table, exact tagged INPUT rule, secondary /32 address and dedicated systemd unit
 Install the source as /etc/netbird-ingress/netbird-ingress.py before enablement.
 """
 import argparse
+import csv
 import fcntl
 import ipaddress
 import json
@@ -14,6 +15,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import socket
 import subprocess
 import sys
 
@@ -40,17 +42,35 @@ def validate(c):
             raise ValueError('Use unprivileged TCP ports')
     if c['frontend_port'] == c['backend_port']:
         raise ValueError('Frontend and backend must be different ports')
+    for key, default, maximum in [('connections_per_ip', 64, 1024),
+                                  ('connections_per_10s', 60, 10000), ('max_connections', 1024, 10000)]:
+        c.setdefault(key, default)
+        if type(c[key]) is not int or not 1 <= c[key] <= maximum:
+            raise ValueError('Invalid protection limit: ' + key)
+    if c['connections_per_ip'] > c['max_connections']:
+        raise ValueError('Per-IP connection limit exceeds total limit')
+    c.setdefault('deny_cidrs', [])
+    if not isinstance(c['deny_cidrs'], list) or len(c['deny_cidrs']) > 1024:
+        raise ValueError('Denylist must be a bounded list of IPv4 networks')
+    networks = [ipaddress.ip_network(value) for value in c['deny_cidrs']]
+    if any(n.version != 4 or any(ipaddress.ip_address(c[k]) in n for k in ('primary_ip', 'floating_ip')) for n in networks):
+        raise ValueError('Denylist must not include the primary or trusted host IPv4')
+    c['deny_cidrs'] = [str(n) for n in ipaddress.collapse_addresses(networks)]
     return c
 
 
 def rules(c):
+    c = validate(dict(c))
     ip, primary = c['floating_ip'], c['primary_ip']
     front, back, iface = c['frontend_port'], c['backend_port'], c['interface']
+    entries = 'elements = { ' + ', '.join(c['deny_cidrs']) + ' };' if c['deny_cidrs'] else ''
     return f'''table inet {TABLE} {{
+    set blocked_sources {{ type ipv4_addr; flags interval; {entries} }}
     chain ingress_guard {{
         type filter hook prerouting priority -150; policy accept;
         iifname != "lo" ip saddr {ip} counter drop comment "reject forged host identity"
         iifname != "lo" fib daddr type local tcp dport {{ {front}, {back} }} counter drop comment "backend is host-only including IPv6"
+        iifname "{iface}" ip daddr {ip} ip saddr @blocked_sources counter drop comment "managed public-ingress denylist"
         ip daddr {ip} ct state established,related accept
         ip daddr {ip} iifname "{iface}" tcp dport 443 accept
         ip daddr {ip} counter drop comment "IP2 serves only HTTPS"
@@ -75,11 +95,13 @@ def rules(c):
 
 
 def haproxy(c):
+    c = validate(dict(c))
     return f'''global
-    maxconn 1024
+    maxconn {c['max_connections']}
     user nobody
     group nogroup
     log stdout format raw local0
+    stats socket /run/netbird-ingress/stats.sock mode 600 level user
 defaults
     mode tcp
     log global
@@ -89,6 +111,10 @@ defaults
     timeout server 1h
 frontend netbird_tls
     bind {c['floating_ip']}:{c['frontend_port']}
+    stick-table type ip size 100k expire 30s store conn_cur,conn_rate(10s)
+    tcp-request connection track-sc0 src
+    tcp-request connection reject if {{ sc0_conn_cur gt {c['connections_per_ip']} }}
+    tcp-request connection reject if {{ sc0_conn_rate gt {c['connections_per_10s']} }}
     default_backend netbird_proxy
 backend netbird_proxy
     source {c['floating_ip']}
@@ -287,11 +313,14 @@ After=netbird-ingress.service
 Type=simple
 ExecStartPre=/usr/bin/python3 /etc/netbird-ingress/netbird-ingress.py check
 ExecStart=/usr/sbin/haproxy -W -db -f /etc/netbird-ingress/haproxy.cfg
+ExecReload=/bin/kill -USR2 $MAINPID
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=/run/lock/netbird-ingress.lock
+RuntimeDirectory=netbird-ingress
+RuntimeDirectoryMode=0700
+ReadWritePaths=/run/lock/netbird-ingress.lock /run/netbird-ingress
 ProtectHome=true
 PrivateTmp=true
 MemoryMax=256M
@@ -323,28 +352,132 @@ WantedBy=timers.target
     print('Installed, not activated. Start netbird-ingress then netbird-tcp-bridge; enable only after verification.')
 
 
+def protection_options(args):
+    changes = {key: getattr(args, key) for key in
+               ('connections_per_ip', 'connections_per_10s', 'max_connections')
+               if getattr(args, key) is not None}
+    if args.deny_cidr is not None or args.clear_deny_list:
+        changes['deny_cidrs'] = args.deny_cidr or []
+    return changes
+
+
+def write_owned(name, text):
+    path = ROOT / name
+    staging = path.with_suffix(path.suffix + '.new')
+    staging.write_text(text)
+    staging.chmod(0o600)
+    os.replace(staging, path)
+
+
+def protect(c, changes):
+    """Apply only protection fields; retain exact network identity and rollback."""
+    if set(changes) - {'connections_per_ip', 'connections_per_10s', 'max_connections', 'deny_cidrs'}:
+        raise ValueError('Protection changes cannot alter ingress network identity')
+    new = validate(dict(c, **changes))
+    preflight(new)
+    for service in ('netbird-ingress.service', 'netbird-tcp-bridge.service'):
+        run('systemctl', 'is-active', '--quiet', service)
+    old_files = {name: (ROOT / name).read_text() for name in ('config.json', 'haproxy.cfg', 'rules.nft')}
+    candidate = ROOT / 'protection-check.cfg'
+    candidate.write_text(haproxy(new))
+    candidate.chmod(0o600)
+    try:
+        run('haproxy', '-c', '-f', str(candidate))
+        run('nft', '--check', '-f', '-', data='delete table inet ' + TABLE + '\n' + rules(new))
+    finally:
+        candidate.unlink(missing_ok=True)
+    write_owned('protection-before.json', json.dumps(old_files))
+    try:
+        write_owned('haproxy.cfg', haproxy(new))
+        write_owned('rules.nft', rules(new))
+        write_owned('config.json', json.dumps(new))
+        up(new)
+        run('systemctl', 'reload', 'netbird-tcp-bridge.service')
+        check(new)
+    except (ValueError, OSError, subprocess.SubprocessError):
+        for name, text in old_files.items():
+            write_owned(name, text)
+        up(c)
+        run('systemctl', 'reload', 'netbird-tcp-bridge.service')
+        raise
+    print('Protection applied; only the dedicated bridge reloaded')
+
+
+def proxy_counters():
+    """Read aggregate frontend counters through the root-only, read-only CLI."""
+    data = bytearray()
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+        connection.settimeout(3)
+        connection.connect('/run/netbird-ingress/stats.sock')
+        connection.sendall(b'show stat\n')
+        while True:
+            chunk = connection.recv(8192)
+            if not chunk:
+                break
+            data.extend(chunk)
+            if len(data) > 1048576:
+                raise ValueError('HAProxy statistics response exceeds limit')
+    rows = csv.DictReader(data.decode('utf-8').removeprefix('# ').splitlines())
+    for row in rows:
+        if row.get('pxname') == 'netbird_tls' and row.get('svname') == 'FRONTEND':
+            fields = {'current_connections': 'scur', 'total_connections': 'stot',
+                      'denied_connections': 'dcon', 'denied_sessions': 'dses'}
+            if any(not str(row.get(key, '')).isdigit() for key in fields.values()):
+                raise ValueError('HAProxy frontend statistics are incomplete')
+            return {name: int(row[key]) for name, key in fields.items()}
+    raise ValueError('HAProxy frontend statistics are unavailable')
+
+
+def report(c):
+    check(c)
+    data = json.loads(run('nft', '-j', 'list', 'table', 'inet', TABLE).stdout)
+    counters = []
+    for item in data.get('nftables', []):
+        rule = item.get('rule', {})
+        for expression in rule.get('expr', []):
+            if 'counter' in expression:
+                counters.append(dict(label=rule.get('comment', rule.get('chain')), **expression['counter']))
+    active = {name: run('systemctl', 'is-active', '--quiet', name, check=False).returncode == 0
+              for name in ('netbird-ingress.service', 'netbird-tcp-bridge.service')}
+    print(json.dumps(dict(services=active, counters=counters, proxy=proxy_counters())))
+    if not all(active.values()):
+        raise ValueError('A managed ingress service is inactive')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['render', 'install', 'up', 'down', 'check', 'reconcile'])
+    parser.add_argument('action', choices=['render', 'render-haproxy', 'install', 'up', 'down', 'check', 'reconcile', 'protect', 'report'])
     parser.add_argument('--primary-ip')
     parser.add_argument('--floating-ip')
     parser.add_argument('--interface', default='eth0')
     parser.add_argument('--frontend-port', type=int, default=18443)
     parser.add_argument('--backend-port', type=int, default=18444)
+    parser.add_argument('--connections-per-ip', type=int)
+    parser.add_argument('--connections-per-10s', type=int)
+    parser.add_argument('--max-connections', type=int)
+    denial = parser.add_mutually_exclusive_group()
+    denial.add_argument('--deny-cidr', action='append', help='Replace the managed denylist with these IPv4 CIDRs')
+    denial.add_argument('--clear-deny-list', action='store_true')
     args = parser.parse_args()
-    if args.action in ('render', 'install'):
+    if args.action in ('render', 'render-haproxy', 'install'):
         c = validate(dict(primary_ip=args.primary_ip, floating_ip=args.floating_ip,
-                          interface=args.interface, frontend_port=args.frontend_port, backend_port=args.backend_port))
+                          interface=args.interface, frontend_port=args.frontend_port, backend_port=args.backend_port,
+                          **protection_options(args)))
     else:
         c = config()
     if args.action == 'render':
         print(rules(c) + '\n# HAProxy\n' + haproxy(c))
+    elif args.action == 'render-haproxy':
+        print(haproxy(c))
     else:
         if os.geteuid() != 0:
             raise ValueError('Host operations require root')
         with open('/run/lock/netbird-ingress.lock', 'a', encoding='utf-8') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
-            {'install': install, 'up': up, 'down': down, 'check': check, 'reconcile': reconcile}[args.action](c)
+            if args.action == 'protect':
+                protect(c, protection_options(args))
+            else:
+                {'install': install, 'up': up, 'down': down, 'check': check, 'reconcile': reconcile, 'report': report}[args.action](c)
 
 
 if __name__ == '__main__':

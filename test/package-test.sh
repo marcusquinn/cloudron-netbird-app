@@ -62,6 +62,7 @@ qualification_contract() {
 	assert_contains test/QUALIFICATION.md 'must not target a production instance' || return 1
 	assert_contains test/QUALIFICATION.md 'No default production target' || return 1
 	assert_contains test/runtime-smoke.py 'never publishes images or host ports' || return 1
+	assert_contains REVERSE-PROXY.md 'INGRESS-HARDENING.md' || return 1
 	return 0
 }
 
@@ -69,6 +70,7 @@ assert_optional_sso_contract() {
 	jq -e '.optionalSso == true and .addons.oidc.loginRedirectUri == "/oauth2/callback" and .addons.oidc.logoutRedirectUri == "/oauth2/logout/callback" and .addons.oidc.tokenSignatureAlgorithm == "RS256"' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Optional Cloudron OIDC addon contract failed" || return 1
 	assert_contains start.sh 'Cloudron SSO credentials are available for owner-managed onboarding' || return 1
 	assert_contains start.sh 'incomplete optional OIDC environment; embedded authentication remains available' || return 1
+	assert_contains README.md 'SSO-SWITCH.md' || return 1
 	if grep -Fq 'api/identity-providers' "${ROOT_DIR}/start.sh"; then
 		fail "Startup must not register an identity provider" || return 1
 	fi
@@ -76,7 +78,7 @@ assert_optional_sso_contract() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.1.0" and .upstreamVersion == "0.79.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.2.0" and .upstreamVersion == "0.79.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/PUBLISHING.md" ]] || fail "PUBLISHING.md is missing" || return 1

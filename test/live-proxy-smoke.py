@@ -25,6 +25,7 @@ def main():
     p.add_argument('--service-domain', required=True)
     p.add_argument('--fixture-image', default='cloudron-netbird:single-vps-dev')
     p.add_argument('--budget', type=int, default=120)
+    p.add_argument('--ingress-host', help='Explicit opt-in root SSH host for bounded rate/denylist tests; requires default rate profile')
     a = p.parse_args()
     owner = secrets.token_hex(8)
     name = 'netbird-live-' + owner
@@ -113,11 +114,15 @@ def main():
             # A network/TLS outage is not proof that access policy denied us.
             try:
                 request = urllib.request.Request('https://' + a.service_domain + '/', headers=headers or {})
-                with urllib.request.urlopen(request, timeout=8):
+                with urllib.request.urlopen(request, timeout=8) as response:
+                    print('Policy probe not denied: HTTP ' + str(response.status), flush=True)
                     return False
             except urllib.error.HTTPError as exc:
+                if exc.code not in (401, 403):
+                    print('Policy probe inconclusive: HTTP ' + str(exc.code), flush=True)
                 return exc.code in (401, 403)
-            except (urllib.error.URLError, TimeoutError):
+            except (urllib.error.URLError, TimeoutError) as exc:
+                print('Policy probe inconclusive: ' + type(exc).__name__, flush=True)
                 return False
 
         wait(denied, 'reject unauthenticated request')
@@ -133,6 +138,9 @@ def main():
         api(path, 'PUT', service_request)
         wait(lambda: reachable(valid_headers), 'traffic recovers after removing test restriction')
         print('PASS: IP restrictions cannot be bypassed by forged forwarding headers', flush=True)
+        if a.ingress_host:
+            from ingress_live import check
+            check(a.ingress_host, a.service_domain, owner)
     finally:
         failures = []
         # Recover IDs if a creation response timed out after the server committed.

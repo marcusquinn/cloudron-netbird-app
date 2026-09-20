@@ -1,9 +1,12 @@
 # Optional single-VPS Reverse Proxy
 
-The 2.1.0 candidate bundles `netbird-proxy` 0.79.0. This is an opt-in,
+The package bundles `netbird-proxy` 0.79.0. This is an opt-in,
 administrator-managed deployment, not a Cloudron platform feature. No second
 VPS is required, but a **second public IPv4** and root SSH access are required.
 For Hetzner Cloud, use a Floating IPv4, not another Primary IPv4.
+
+Apply the matching [public-ingress protection profile](INGRESS-HARDENING.md).
+An app update does not update the separately installed host helper or its rules.
 
 **Multiple apps:** private-only instances need no additional IP, and one proxy IP
 can serve many HTTPS services within one instance. This host helper is currently
