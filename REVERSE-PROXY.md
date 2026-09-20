@@ -5,6 +5,12 @@ administrator-managed deployment, not a Cloudron platform feature. No second
 VPS is required, but a **second public IPv4** and root SSH access are required.
 For Hetzner Cloud, use a Floating IPv4, not another Primary IPv4.
 
+**Multiple apps:** private-only instances need no additional IP, and one proxy IP
+can serve many HTTPS services within one instance. This host helper is currently
+single-instance: do not rerun it for another app or overwrite its configuration.
+Separate-IP and shared-SNI designs need further implementation and qualification;
+see [multi-instance setup and security](MULTI-INSTANCE.md).
+
 ## Boundaries
 
 ```text
