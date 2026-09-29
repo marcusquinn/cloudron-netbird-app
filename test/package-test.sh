@@ -95,7 +95,7 @@ main() {
 	assert_contains docs/PUBLISHING.md 'ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
 	jq -e '.versions["2.0.3"].publishState == "published"' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Published catalog state contract failed" || return 1
 	assert_contains Dockerfile 'netbirdio/netbird-server:0.79.0@sha256:d1da0c0179c9e6f2ab7b48be54d06341b11037855a9426b9f2536aa79f13360b AS server' || return 1
-	assert_contains Dockerfile 'netbirdio/dashboard:v2.92.0@sha256:fa2d8b02a81761e4d2a22df4041d13316b7635f1e93273eafeb53d4991e55b5a AS dashboard' || return 1
+	assert_contains Dockerfile 'netbirdio/dashboard:v2.93.0@sha256:b96c67fe89aaed7164513579d00565bd4326d8a5b8b8ee8c8ccf9ca7efa3f288 AS dashboard' || return 1
 	assert_contains Dockerfile 'cloudron/base:5.1.0@sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e' || return 1
 	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
 	assert_contains Dockerfile 'gettext-base' || return 1
