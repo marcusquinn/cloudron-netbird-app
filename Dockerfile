@@ -1,5 +1,5 @@
 FROM netbirdio/netbird-server:0.79.0@sha256:d1da0c0179c9e6f2ab7b48be54d06341b11037855a9426b9f2536aa79f13360b AS server
-FROM netbirdio/dashboard:v2.93.0@sha256:b96c67fe89aaed7164513579d00565bd4326d8a5b8b8ee8c8ccf9ca7efa3f288 AS dashboard
+FROM netbirdio/dashboard:v2.94.0@sha256:70e0fc6dd3b7758148d182fb55ecd8d4f9ce01e9bba56c9389224e0b8354009d AS dashboard
 FROM netbirdio/reverse-proxy:0.79.0@sha256:f18745746dfc797dfc60418b9c2714671aee0e020317df47fb22f37329c2dd54 AS proxy
 FROM cloudron/base:5.1.0@sha256:1c0666c9abe9e2090d33686826d4e97769b799124573118d41e0d7485135748e
 
