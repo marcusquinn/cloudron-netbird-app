@@ -130,9 +130,10 @@ and ingress/bridge startup is queued without waiting on the helper's shared lock
 Repair errors fail the check service rather than silently succeeding; inspect
 `systemctl status netbird-ingress-check.service` and its journal. A queued start
 is not proof of an active bridge; check both service states after recovery.
-The timer respects an intentional inactive service stop. A missing INPUT allowance or NAT rule fails closed
-while the separate guard remains intact. No software can promise that isolation
-survives an administrator flushing the entire firewall; do not do so.
+The timer respects an intentional inactive service stop. A missing INPUT allowance
+or NAT rule fails closed while the separate guard remains intact. No software can
+promise that isolation survives an administrator flushing the entire firewall;
+do not do so.
 
 After reboot, nftables state is absent. `up` restores the guard before checking
 network/HAProxy readiness and does not reject the managed app's existing backend

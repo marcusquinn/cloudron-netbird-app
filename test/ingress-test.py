@@ -130,8 +130,8 @@ class IngressTest(unittest.TestCase):
                 if args[0] == 'nft':
                     return subprocess.CompletedProcess(args, 1, stdout='')
                 return subprocess.CompletedProcess(args, 0, stdout=f'LISTEN 0 128 {address} *:*\n')
-            with self.subTest(address=address), patch.object(M, 'preflight'), \
-                 patch.object(M, 'ROOT', Path('/nonexistent-netbird-ingress-test')), \
+            with self.subTest(address=address), tempfile.TemporaryDirectory() as directory, \
+                 patch.object(M, 'preflight'), patch.object(M, 'ROOT', Path(directory) / 'ingress'), \
                  patch.object(M, 'run', side_effect=fake_run) as run:
                 with self.assertRaisesRegex(ValueError, 'already occupied'):
                     M.install(self.config)
@@ -144,8 +144,13 @@ class IngressTest(unittest.TestCase):
             calls.append((args, kwargs))
             if args[:3] == ('nft', 'list', 'table'):
                 return subprocess.CompletedProcess(args, 1, stdout='')
-            if args[0] in ('ss', 'docker'):
-                self.fail('Reboot must not inventory already reserved app ports')
+            if args[0] == 'ss':
+                return subprocess.CompletedProcess(args, 0, stdout='LISTEN 0 128 0.0.0.0:18444 *:*\n')
+            if args[:2] == ('docker', 'ps'):
+                return subprocess.CompletedProcess(args, 0, stdout='managed-app\n')
+            if args[:2] == ('docker', 'inspect'):
+                return subprocess.CompletedProcess(args, 0,
+                                                   stdout='{"8443/tcp":[{"HostIp":"","HostPort":"18444"}]}')
             return subprocess.CompletedProcess(args, 0, stdout='')
 
         with tempfile.TemporaryDirectory() as directory, patch.object(M, 'ROOT', Path(directory)), \
@@ -158,6 +163,7 @@ class IngressTest(unittest.TestCase):
         self.assertIn('tcp dport { 18443, 18444 }', calls[2][1]['data'])
         self.assertNotIn('delete table', calls[2][1]['data'])
         self.assertEqual(calls[3][0][0], 'haproxy')
+        self.assertFalse(any(args[0] in ('ss', 'docker') for args, _ in calls))
 
     def test_guard_installed_before_readiness_failure(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(M, 'ROOT', Path(directory)), \
