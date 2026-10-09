@@ -1,3 +1,7 @@
+[2.3.1]
+* Update the combined NetBird server and optional reverse proxy to v0.80.0 with immutable image digests.
+* Retain dashboard v2.93.0 and the pinned Cloudron base 5.1.0; no automatic proxy or SSO configuration changes.
+
 [2.3.0]
 * Add opt-in operator reconciliation of Cloudron user/group app access to NetBird SSO-user approval and blocking.
 * Preserve embedded recovery owners, existing peer ownership, other providers and user roles/groups.
