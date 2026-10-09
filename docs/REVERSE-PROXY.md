@@ -49,7 +49,7 @@ NetBird's IP restrictions (covered by the live smoke check).
     HAProxy service from auto-starting: this setup uses `netbird-tcp-bridge.service`
     instead. Do not restart unrelated services as part of package installation.
     Both ingress ports must be unused on **all host addresses**, not only IP2.
-    First installation/activation checks TCP listeners and Docker port bindings
+    First installation checks TCP listeners and Docker port bindings
     (including stopped containers), requiring working `ss` and Docker access.
     Do not enable the app proxy port until after the guard is active (step 6).
     The retained guard reserves these ports: never assign them to another app,
@@ -124,10 +124,44 @@ Invalid domain/trust configuration exits with code 78 (no restart storm).
 ## Recovery and limitations
 
 The 30-second timer detects changes to this helper's rules and INPUT ordering
-and reapplies only its own state while the ingress service is active. It respects
-an intentional service stop. A missing INPUT allowance or NAT rule fails closed
+and reapplies only its own state while the ingress service is active. A failed
+ingress unit is also repaired: the guard is restored first, readiness is checked,
+and ingress/bridge startup is queued without waiting on the helper's shared lock.
+Repair errors fail the check service rather than silently succeeding; inspect
+`systemctl status netbird-ingress-check.service` and its journal. A queued start
+is not proof of an active bridge; check both service states after recovery.
+The timer respects an intentional inactive service stop. A missing INPUT allowance or NAT rule fails closed
 while the separate guard remains intact. No software can promise that isolation
 survives an administrator flushing the entire firewall; do not do so.
+
+After reboot, nftables state is absent. `up` restores the guard before checking
+network/HAProxy readiness and does not reject the managed app's existing backend
+binding. Port collision checks remain mandatory at first installation. This is
+not an early-boot guard: the ingress unit runs **after Docker**, so a published
+backend can be exposed between Docker startup and guard restoration. Intentional
+stops retain the guard only until reboot. Keep PROXY_PORT disabled when ingress
+is disabled across reboots; do not rely on the timer to undo an intentional stop.
+
+Existing hosts must update the separately installed helper (an app update is not
+sufficient). Copy the reviewed source to `/etc/netbird-ingress/netbird-ingress.py`
+and rerun `install` with the **same** IPs, interface, ports and protection options;
+do not change the host identity or discard an existing denylist. Under the same
+5-minute rollback timer used at setup, recover with:
+
+```sh
+python3 /etc/netbird-ingress/netbird-ingress.py up
+systemctl start netbird-ingress.service netbird-tcp-bridge.service
+python3 /etc/netbird-ingress/netbird-ingress.py check
+systemctl is-active netbird-ingress.service netbird-tcp-bridge.service
+```
+
+If readiness fails, the restored guard remains; inspect the unit/check journals
+and repair the reported dependency before retrying. Cancel rollback only after
+external direct-port probes time out and IP2:443 reaches the intended proxy.
+Qualify a full reboot in a maintenance window: without manual intervention both
+units must become active, `check` must pass, IP1:18443/18444 must time out from an
+external machine, and IP2:443 must reach the proxy. These runner tests do not
+constitute production reboot qualification or prove zero early-boot exposure.
 
 Stop with `systemctl stop netbird-tcp-bridge.service netbird-ingress.service`.
 This removes only the labelled secondary address and tagged INPUT allowance.

@@ -124,17 +124,71 @@ class IngressTest(unittest.TestCase):
             M.reconcile(self.config)
             up.assert_called_once_with(self.config)
 
-    def test_first_activation_rejects_host_listener_before_mutation(self):
+    def test_install_rejects_host_listener_before_mutation(self):
         for address in ('0.0.0.0:18443', '[::]:18444', '127.0.0.1:18444'):
             def fake_run(*args, **kwargs):
                 if args[0] == 'nft':
                     return subprocess.CompletedProcess(args, 1, stdout='')
                 return subprocess.CompletedProcess(args, 0, stdout=f'LISTEN 0 128 {address} *:*\n')
             with self.subTest(address=address), patch.object(M, 'preflight'), \
+                 patch.object(M, 'ROOT', Path('/nonexistent-netbird-ingress-test')), \
                  patch.object(M, 'run', side_effect=fake_run) as run:
                 with self.assertRaisesRegex(ValueError, 'already occupied'):
-                    M.up(self.config)
+                    M.install(self.config)
                 self.assertEqual([call.args[0] for call in run.call_args_list], ['nft', 'ss'])
+
+    def test_reboot_restores_guard_with_bound_docker_backend(self):
+        calls = []
+
+        def run(*args, **kwargs):
+            calls.append((args, kwargs))
+            if args[:3] == ('nft', 'list', 'table'):
+                return subprocess.CompletedProcess(args, 1, stdout='')
+            if args[0] in ('ss', 'docker'):
+                self.fail('Reboot must not inventory already reserved app ports')
+            return subprocess.CompletedProcess(args, 0, stdout='')
+
+        with tempfile.TemporaryDirectory() as directory, patch.object(M, 'ROOT', Path(directory)), \
+             patch.object(M, 'run', side_effect=run), patch.object(M, 'preflight'), \
+             patch.object(M, 'rule_signature', return_value={}), \
+             patch.object(M, 'allowance_precedes_cloudron', return_value=True), \
+             patch.object(M, 'addresses', return_value=[dict(local='9.9.9.9')]):
+            M.up(self.config)
+        self.assertEqual(calls[2][0], ('nft', '-f', '-'))
+        self.assertIn('tcp dport { 18443, 18444 }', calls[2][1]['data'])
+        self.assertNotIn('delete table', calls[2][1]['data'])
+        self.assertEqual(calls[3][0][0], 'haproxy')
+
+    def test_guard_installed_before_readiness_failure(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(M, 'ROOT', Path(directory)), \
+             patch.object(M, 'run', return_value=subprocess.CompletedProcess([], 1)) as run, \
+             patch.object(M, 'rule_signature', return_value={}), \
+             patch.object(M, 'preflight', side_effect=ValueError('network unavailable')):
+            with self.assertRaisesRegex(ValueError, 'network unavailable'):
+                M.up(self.config)
+            self.assertEqual(run.call_args_list[-1].args, ('nft', '-f', '-'))
+
+    def test_failed_service_repaired_and_start_queued_without_lock_deadlock(self):
+        results = [subprocess.CompletedProcess([], 3), subprocess.CompletedProcess([], 0),
+                   subprocess.CompletedProcess([], 0)]
+        with patch.object(M, 'run', side_effect=results) as run, \
+             patch.object(M, 'up') as up, patch.object(M, 'check') as check:
+            M.reconcile(self.config)
+            up.assert_called_once_with(self.config)
+            check.assert_called_once_with(self.config)
+            self.assertEqual(run.call_args_list[-1].args,
+                             ('systemctl', '--no-block', 'start', 'netbird-ingress.service',
+                              'netbird-tcp-bridge.service'))
+
+    def test_failed_service_repair_errors_propagate(self):
+        for failure in (ValueError('repair failed'), subprocess.CalledProcessError(1, 'nft')):
+            with self.subTest(failure=failure), \
+                 patch.object(M, 'run', side_effect=[subprocess.CompletedProcess([], 3),
+                                                   subprocess.CompletedProcess([], 0)]) as run, \
+                 patch.object(M, 'up', side_effect=failure):
+                with self.assertRaises(type(failure)):
+                    M.reconcile(self.config)
+                self.assertEqual(run.call_count, 2)
 
     def test_docker_bindings_detected_without_listeners(self):
         results = [subprocess.CompletedProcess([], 0, stdout=''),

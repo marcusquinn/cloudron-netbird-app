@@ -196,17 +196,22 @@ def require_unused_ports(c):
                     raise ValueError('Ingress port is already reserved by a Docker container: ' + port)
 
 
-def up(c):
-    preflight(c)
+def restore_guard(c):
+    """Restore owned firewall state before fallible bridge readiness checks."""
     exists = run('nft', 'list', 'table', 'inet', TABLE, check=False).returncode == 0
-    if not exists:
-        require_unused_ports(c)
     text = ('delete table inet ' + TABLE + '\n' if exists else '') + rules(c)
     run('nft', '--check', '-f', '-', data=text)
-    run('haproxy', '-c', '-f', str(ROOT / 'haproxy.cfg'))
     # The batch replacement is atomic. Never flush Cloudron's/Docker's tables.
     run('nft', '-f', '-', data=text)
     (ROOT / 'installed-rules.json').write_text(json.dumps(rule_signature(), sort_keys=True))
+
+
+def up(c):
+    # Installation reserved the ports; the managed app may now own the backend.
+    # A reboot removes nft state, not that reservation. Restore protection first.
+    restore_guard(c)
+    preflight(c)
+    run('haproxy', '-c', '-f', str(ROOT / 'haproxy.cfg'))
     args = allowance(c)
     if not allowance_precedes_cloudron():
         while run('iptables', '-w', '5', '-C', 'INPUT', *args, check=False).returncode == 0:
@@ -246,8 +251,16 @@ def check(c):
 
 
 def reconcile(c):
-    # Respect an intentional stop/rollback. Never reactivate a stopped ingress.
     if run('systemctl', 'is-active', '--quiet', 'netbird-ingress.service', check=False).returncode:
+        # Inactive is an intentional stop/rollback; failed is a repair target.
+        if run('systemctl', 'is-failed', '--quiet', 'netbird-ingress.service', check=False).returncode:
+            return
+        up(c)
+        check(c)
+        # ExecStart takes the same CLI lock. Queue instead of waiting while we
+        # hold it; systemd records any subsequent start failure for the next tick.
+        run('systemctl', '--no-block', 'start', 'netbird-ingress.service', 'netbird-tcp-bridge.service')
+        print('Repaired failed ingress state; queued ingress and bridge startup')
         return
     try:
         check(c)
