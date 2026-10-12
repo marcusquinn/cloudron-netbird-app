@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Upgrade the final Cloudron base image from `5.1.0` to `6.0.0`, pinned to
+  `sha256:9bed4c8fa880645f8e669041ee28febe941481d00e9445e3e5a5483cb541d09b`.
+- Explicitly install `iproute2` to retain the `ss` utility used by startup after
+  its removal from the base image. The package uses prebuilt NetBird binaries
+  and dashboard assets, so no Node, PHP, Apache, pip/venv or mongosh migration
+  is required. Retain the existing Cloudron `9.1.0` minimum.
+- The upgrade passed a local disposable-container build and runtime smoke check;
+  production Cloudron migration and backup/restore qualification remain pending.
+  This entry does not publish a package, image or catalog update.
+
 ## [2.3.1] - 2026-10-09
 
 - Update the combined NetBird server and optional reverse proxy from `v0.79.0`
