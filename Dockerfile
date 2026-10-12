@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     gettext-base \
     ca-certificates \
+    iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the multi-architecture combined server image published for NetBird v0.80.0.
