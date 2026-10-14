@@ -43,6 +43,16 @@ assert_native_dashboard_redirect_contract() {
 	return 0
 }
 
+assert_native_listener_contract() {
+	assert_contains start.sh 'listen 33074 ssl http2;' || return 1
+	# Docker publishes NETBIRD_PORT over IPv6 too; bind it only when available.
+	assert_contains start.sh "echo 'listen [::]:33074 ssl http2;' >/run/nginx/listen-ipv6.conf" || return 1
+	assert_contains start.sh 'include /run/nginx/listen-ipv6.conf;' || return 1
+	assert_contains start.sh 'if [[ -s /proc/net/if_inet6 ]]; then' || return 1
+	assert_native_dashboard_redirect_contract || return 1
+	return 0
+}
+
 assert_catalog_publisher_contract() {
 	if grep -Fq 'include-hidden-files: true' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml"; then
 		fail "Release workflow uploads hidden checkout credentials" || return 1
@@ -130,12 +140,7 @@ main() {
 	assert_contains start.sh "try_files \$uri.html \$uri \$uri/ /index.html;" || return 1
 	assert_contains start.sh "rewrite ^(.+)/\$ \$1 last;" || return 1
 	assert_contains start.sh 'listen 8080;' || return 1
-	assert_contains start.sh 'listen 33074 ssl http2;' || return 1
-	# Docker publishes NETBIRD_PORT over IPv6 too; bind it only when available.
-	assert_contains start.sh "echo 'listen [::]:33074 ssl http2;' >/run/nginx/listen-ipv6.conf" || return 1
-	assert_contains start.sh 'include /run/nginx/listen-ipv6.conf;' || return 1
-	assert_contains start.sh 'if [[ -s /proc/net/if_inet6 ]]; then' || return 1
-	assert_native_dashboard_redirect_contract || return 1
+	assert_native_listener_contract || return 1
 	assert_contains start.sh 'ssl_certificate /etc/certs/tls_cert.pem;' || return 1
 	# shellcheck disable=SC2016 # Assert the generated-script placeholders literally.
 	assert_contains start.sh 'exposedAddress: "https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"' || return 1
