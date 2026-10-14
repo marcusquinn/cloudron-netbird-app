@@ -37,7 +37,7 @@ RUN chmod +x /app/code/start.sh
 # Expose dashboard/API HTTP plus the dedicated native TLS transport.
 EXPOSE 8080 33074 8443
 
-# Expose STUN UDP port
-EXPOSE 3478/udp
+# STUN defaults to Cloudron's platform service. The optional embedded STUN
+# server listens on the operator-selected UDP port, so no fixed port is exposed.
 
 CMD ["/app/code/start.sh"]

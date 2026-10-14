@@ -41,7 +41,7 @@ cloudron exec --app netbird
 
 - **Real-world testing** -- Install on a Cloudron instance, report issues
 - **OIDC flow testing** -- Verify the Cloudron SSO login flow end-to-end (automatic and manual registration)
-- **TURN relay testing** -- Verify peers behind strict NAT can connect via Cloudron's TURN server
+- **NAT traversal testing** -- Verify peers behind strict NAT discover addresses via Cloudron STUN and fall back to NetBird's built-in relay
 
 ### Medium Priority
 

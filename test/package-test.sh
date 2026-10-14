@@ -77,8 +77,21 @@ assert_optional_sso_contract() {
 	return 0
 }
 
+assert_stun_and_trust_contract() {
+	jq -e '.udpPorts.STUN_PORT.containerPort == null' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "STUN must use the selected external port inside the container" || return 1
+	jq -e '.addons.turn == {} and .udpPorts.STUN_PORT.enabledByDefault == false and .udpPorts.STUN_PORT.defaultValue != 3478' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Cloudron STUN must be the default with an opt-in dedicated STUN port" || return 1
+	# shellcheck disable=SC2016 # Assert the generated-config placeholders literally.
+	assert_contains start.sh '- uri: \"stun:${CLOUDRON_TURN_SERVER}:${CLOUDRON_TURN_PORT}\"' || return 1
+	if grep -Fq 'CLOUDRON_TURN_SECRET}' "${ROOT_DIR}/start.sh"; then
+		fail "STUN-only Cloudron integration must not read the TURN secret" || return 1
+	fi
+	assert_contains start.sh '      - "127.0.0.1/32"' || return 1
+	assert_contains start.sh '      - "::1/128"' || return 1
+	return 0
+}
+
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.3.1" and .upstreamVersion == "0.80.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.4.0" and .upstreamVersion == "0.80.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/docs/PUBLISHING.md" ]] || fail "Publishing guide is missing" || return 1
@@ -99,7 +112,7 @@ main() {
 	assert_contains Dockerfile 'cloudron/base:6.0.0@sha256:9bed4c8fa880645f8e669041ee28febe941481d00e9445e3e5a5483cb541d09b' || return 1
 	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
 	assert_contains Dockerfile 'gettext-base' || return 1
-	jq -e '.udpPorts.STUN_PORT.containerPort == null' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "STUN must use the selected external port inside the container" || return 1
+	assert_stun_and_trust_contract || return 1
 	jq -e '.addons.tls == {} and .tcpPorts.NETBIRD_PORT.defaultValue == 33073 and .tcpPorts.NETBIRD_PORT.containerPort == 33074 and .tcpPorts.NETBIRD_PORT.enabledByDefault == true' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Native client transport must use the Cloudron TLS addon and dedicated container port" || return 1
 	assert_optional_sso_contract || return 1
 	assert_contains start.sh 'cp -a /app/code/dashboard/. /run/dashboard/' || return 1

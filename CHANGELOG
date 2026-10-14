@@ -1,3 +1,10 @@
+[2.4.0]
+* Use Cloudron's platform STUN service by default; new installs no longer need a dedicated STUN UDP port.
+* Make the dedicated STUN port optional; existing installs keep their binding and NetBird's own STUN server.
+* Keep NetBird's built-in relay for peers that cannot connect directly; Cloudron's TURN relay and secret are not used.
+* Trust forwarded client addresses only from the in-container proxies.
+* Update to Cloudron base 6.0.0 and dashboard v2.94.0.
+
 [2.3.1]
 * Update the combined NetBird server and optional reverse proxy to v0.80.0 with immutable image digests.
 * Retain dashboard v2.93.0 and the pinned Cloudron base 5.1.0; no automatic proxy or SSO configuration changes.

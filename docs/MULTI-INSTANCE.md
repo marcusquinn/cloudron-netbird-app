@@ -10,15 +10,18 @@ Verify the installed package version and assigned ports before provisioning.
 
 | Requirement | Address allocation | Support boundary |
 |---|---|---|
-| Independent private mesh, dashboard, native clients and relay/STUN | Existing primary IPv4; no additional Floating IP per app | Unique app hostname, native TCP port and STUN UDP port per instance |
+| Independent private mesh, dashboard, native clients and relay/STUN | Existing primary IPv4; no additional Floating IP per app | Unique app hostname and native TCP port per instance; shared Cloudron STUN |
 | Several public HTTPS services within one NetBird instance | One additional public IPv4 for that proxy ingress | Multiple service subdomains share the proxy's port 443 |
 | Public HTTPS proxies for several independent instances | Separate ingress IPv4s are the simpler design | Not supported by repeatedly running the current single-instance host helper |
 | Several independent proxies sharing one ingress IPv4 | Possible future TLS-SNI routing design | Not implemented or qualified by this package |
 
 Cloudron shares primary-IP HTTPS port 443 between dashboards by hostname. Each
-app still needs distinct selected native TCP and STUN UDP ports; use those exact
-ports in clients and firewall configuration. Fixed internal container ports can
-repeat across isolated containers. Cloudron TURN is not NetBird's relay/STUN.
+app still needs a distinct selected native TCP port; use that exact port in
+clients and firewall configuration. Fixed internal container ports can repeat
+across isolated containers. All instances can share Cloudron's platform STUN
+service; STUN carries no mesh data or credentials. If an instance enables the
+optional dedicated STUN port instead, that UDP port must also be unique. Each
+instance keeps its own NetBird relay; Cloudron's TURN relay is not used.
 
 On Hetzner Cloud the additional ingress address is a Floating IPv4. Do not buy
 another address for a private-only instance, or an address for every published

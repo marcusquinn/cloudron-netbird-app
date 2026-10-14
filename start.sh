@@ -183,12 +183,58 @@ NETBIRD_NATIVE_PORT="${NETBIRD_PORT}"
 # shellcheck disable=SC2153 # CLOUDRON_POSTGRESQL_HOST is injected and validated above.
 PG_DSN="host=${CLOUDRON_POSTGRESQL_HOST} user=${CLOUDRON_POSTGRESQL_USERNAME} password=${CLOUDRON_POSTGRESQL_PASSWORD} dbname=${CLOUDRON_POSTGRESQL_DATABASE} port=${CLOUDRON_POSTGRESQL_PORT} sslmode=prefer"
 
+# STUN source selection. NetBird's embedded relay does not depend on STUN and
+# stays enabled in every mode.
+# 1. An operator-bound STUN_PORT keeps the embedded STUN server on that port.
+# 2. Otherwise advertise Cloudron's platform STUN service (TURN addon). STUN
+#    Binding requests need no TURN credentials, so CLOUDRON_TURN_SECRET is
+#    never read. Setting server.stuns disables NetBird's local STUN listener.
+# 3. Without either, NetBird keeps its unexposed default listener; NAT discovery
+#    may fail and peers may fall back to the relay.
+is_valid_port() {
+    local value="$1"
+    [[ "${value}" =~ ^[1-9][0-9]{0,4}$ ]] && ((value <= 65535)) && return 0
+    return 1
+}
+
+select_stun_config() {
+    if [[ -n "${STUN_PORT:-}" ]]; then
+        if ! is_valid_port "${STUN_PORT}"; then
+            echo "ERROR: STUN_PORT must be an integer between 1 and 65535 (got: '${STUN_PORT}')." >&2
+            return 1
+        fi
+        STUN_CONFIG="  stunPorts:
+    - ${STUN_PORT}"
+        echo "==> STUN: embedded NetBird server on selected UDP port ${STUN_PORT}"
+        return 0
+    fi
+
+    if [[ -n "${CLOUDRON_TURN_SERVER:-}" && -n "${CLOUDRON_TURN_PORT:-}" ]] &&
+        ! { [[ "${CLOUDRON_TURN_SERVER}" =~ ^[A-Za-z0-9.-]+$ ]] && is_valid_port "${CLOUDRON_TURN_PORT}"; }; then
+        echo "WARNING: Ignoring an invalid Cloudron TURN server or port." >&2
+    elif [[ -n "${CLOUDRON_TURN_SERVER:-}" && -n "${CLOUDRON_TURN_PORT:-}" ]]; then
+        STUN_CONFIG="  stuns:
+    - uri: \"stun:${CLOUDRON_TURN_SERVER}:${CLOUDRON_TURN_PORT}\"
+      proto: \"udp\""
+        echo "==> STUN: Cloudron platform service stun:${CLOUDRON_TURN_SERVER}:${CLOUDRON_TURN_PORT}"
+        return 0
+    fi
+
+    STUN_CONFIG=""
+    echo "WARNING: Neither Cloudron TURN nor the optional STUN port is available; NAT discovery may fail and peers may fall back to the relay. Check the Cloudron TURN service or bind the STUN port." >&2
+    return 0
+}
+
+select_stun_config || exit 1
+
+# Only the in-container nginx frontends and bundled proxy connect to the
+# combined server, always over loopback. Trust forwarded client addresses from
+# those peers only, so other containers cannot forge X-Forwarded-For.
 cat >/app/data/config/config.yaml <<CONFIG_EOF
 server:
   listenAddress: ":80"
   exposedAddress: "https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"
-  stunPorts:
-    - ${STUN_PORT:-3478}
+${STUN_CONFIG}
   metricsPort: 9090
   healthcheckAddress: ":9000"
   logLevel: "info"
@@ -210,6 +256,11 @@ server:
     engine: "postgres"
     dsn: "${PG_DSN}"
     encryptionKey: "${ENCRYPTION_KEY}"
+
+  reverseProxy:
+    trustedPeers:
+      - "127.0.0.1/32"
+      - "::1/128"
 CONFIG_EOF
 
 # Also export DSN as env var (the server checks both config.yaml and env)

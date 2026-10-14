@@ -24,7 +24,8 @@ for the pinned upstream version. It includes:
 - **Management API** -- peer registry, ACLs, setup keys, network routes
 - **Signal server** -- WebRTC ICE negotiation for P2P connection setup
 - **Relay server** -- fallback for peers behind strict NAT
-- **STUN server** -- NAT type detection (UDP 3478)
+- **STUN** -- NAT discovery through Cloudron's platform STUN service by default,
+  or NetBird's own STUN server on an optional dedicated UDP port
 - **Embedded IdP** -- built-in user management (Dex) with `/setup` onboarding page
 - **Dashboard** -- web UI for administration
 - **Optional Reverse Proxy** -- public HTTPS services through mesh peers, using
@@ -50,11 +51,18 @@ an app update does not enable background synchronization or migrate existing pee
 |----------|---------|
 | Cloudron | v9.1.0+ |
 | Memory | 512 MB (configurable in manifest) |
-| Ports | TCP 443 plus configurable TCP 33073 and UDP 3478 by default |
+| Ports | TCP 443 plus configurable TCP 33073; Cloudron STUN on UDP 3478 |
 
-**Important**: Keep both selected NetBird ports accessible from clients. Cloudron
-maps the external native TCP port to container port 33074. NetBird listens
-directly on the selected STUN UDP port.
+**Important**: Keep the selected native TCP port accessible from clients.
+Cloudron maps it to container port 33074.
+
+STUN uses Cloudron's platform STUN/TURN service by default (UDP 3478, already
+open on Cloudron). Clients only send unauthenticated STUN Binding requests to
+it; Cloudron's TURN credentials are not used. NetBird's built-in relay still
+handles peers that cannot connect directly. To run NetBird's own STUN server
+instead, enable the optional dedicated STUN port (default 3479) in the app's
+Location settings. Existing installations keep their STUN port binding, and
+therefore their embedded STUN server, until you disable it.
 
 ## Installation
 
@@ -173,7 +181,8 @@ Cloudron Server
 |                 netbird-server :80                       |
 |          Management + Signal + Relay + embedded IdP      |
 |                                                          |
-| selected UDP port -> embedded STUN                       |
+| TURN addon -> Cloudron STUN advertised to clients        |
+|   (optional UDP port -> embedded STUN instead)           |
 | PostgreSQL addon -> persistent application data          |
 +----------------------------------------------------------+
 ```
@@ -294,7 +303,8 @@ cases.
 - [ ] App survives restart (`cloudron restart --app netbird`)
 - [ ] Backup/restore preserves all state
 - [ ] Memory stays within 512 MB limit
-- [ ] Selected STUN UDP port is accessible from clients
+- [ ] Clients receive a reachable STUN server (Cloudron STUN, or the optional
+      dedicated STUN UDP port when enabled)
 - [ ] (Optional) Cloudron SSO callback and login work on isolated staging
 - [ ] A denied/pending external user receives no unintended access or owner role
 - [ ] Embedded-owner login and setup-key enrolment work during IdP outage
@@ -335,9 +345,10 @@ cloudron-netbird-app/
    Opening the selected native port in a browser redirects GET/HEAD dashboard
    navigation to that canonical HTTPS URL; native transport endpoints remain on
    the selected port.
-2. **STUN port**: The selected UDP port must be directly accessible. Cloudron
-   TURN cannot replace NetBird's embedded relay/STUN because its shared-secret
-   credentials do not map to NetBird's static external-server configuration.
+2. **Cloudron TURN is STUN-only here**: Cloudron's TURN relay issues
+   time-limited credentials from a shared secret, which NetBird's static
+   external TURN entries cannot generate. The package therefore advertises only
+   Cloudron's STUN service and keeps NetBird's built-in relay for fallback.
 3. **Reverse Proxy needs separate ingress**: Cloudron's normal HTTPS endpoint
    cannot provide raw TLS passthrough. The optional
    [second-IP host bridge](docs/REVERSE-PROXY.md)

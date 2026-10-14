@@ -21,8 +21,8 @@ scenarios or native VPN-provider support were verified.
 
 ## Architecture
 
-- **Cloudron base image**: `cloudron/base:5.1.0`
-- **Combined server**: Single `netbird-server` binary (management + signal + relay + embedded STUN + embedded IdP)
+- **Cloudron base image**: `cloudron/base:6.0.0`
+- **Combined server**: Single `netbird-server` binary (management + signal + relay + optional embedded STUN + embedded IdP)
 - **Internal nginx**: Port 8080 serves Cloudron-proxied web traffic. Port 33074
   terminates Cloudron-addon TLS for native clients. Both route to port 80.
 - **Dashboard**: Static files from `netbirdio/dashboard` served directly by nginx
@@ -34,7 +34,7 @@ scenarios or native VPN-provider support were verified.
 ### Multiple app instances
 
 Read [multi-instance guidance](docs/MULTI-INSTANCE.md) before adding a brand.
-Private meshes share the primary IP with unique native/STUN ports. The current
+Private meshes share the primary IP with unique native ports. The current
 host proxy helper is single-instance; additional IPs alone do not enable reuse.
 Preserve organisation boundaries and require separate multi-instance qualification.
 
@@ -63,9 +63,20 @@ an owner PAT, overwrite an existing connector, or log the client secret.
 Embedded and external identities remain distinct even when email matches; never
 silently link or promote an external identity.
 
-### STUN port: UDP not TCP
+### STUN: Cloudron service by default, embedded STUN opt-in
 
-STUN uses UDP. Declare it under `udpPorts`, not `tcpPorts`, and omit a fixed `containerPort`: the combined server uses one value for both its listener and advertised endpoint, so it must listen on Cloudron's selected external port.
+Default to Cloudron's platform STUN via the required `turn` addon (optional
+addons are disabled at install time)
+(`server.stuns` from `CLOUDRON_TURN_SERVER`/`CLOUDRON_TURN_PORT`); never read
+`CLOUDRON_TURN_SECRET` or advertise Cloudron's TURN relay (incompatible
+time-limited credentials). An operator-bound `STUN_PORT` keeps NetBird's
+embedded STUN and wins, so updated installs keep their binding. That port stays
+under `udpPorts`, disabled by default, without a fixed `containerPort`: the
+combined server uses one value for listener and advertised endpoint. The
+NetBird relay is independent of STUN and always stays enabled.
+
+Keep `server.reverseProxy.trustedPeers` loopback-only: only in-container nginx
+and the bundled proxy connect over loopback.
 
 ### Native client transport: dedicated TLS port
 
@@ -147,8 +158,8 @@ See README.md Testing Checklist for the full list.
 - Optional single-VPS Reverse Proxy uses a second-IP host bridge, not Cloudron
   HTTPS. See docs/REVERSE-PROXY.md. Trust the dedicated SNAT IP /32, never the shared
   Docker gateway: Cloudron masquerades intra-bridge traffic.
-- Cloudron TURN uses an incompatible relay credential model; built-in
-  relay/STUN are used
+- Cloudron TURN uses an incompatible relay credential model; only its STUN
+  service is advertised and NetBird's built-in relay is used
 - Live native registration, ACME/TLS, remote peer HTTP traffic, header auth and
   forged-forwarding-header denial are verified. Full VPS reboot and platform
   upgrade qualification still require a maintenance window.
