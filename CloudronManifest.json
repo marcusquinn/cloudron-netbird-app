@@ -25,9 +25,7 @@
       "tokenSignatureAlgorithm": "RS256"
     },
     "tls": {},
-    "turn": {
-      "optional": true
-    }
+    "turn": {}
   },
   "tcpPorts": {
     "NETBIRD_PORT": {

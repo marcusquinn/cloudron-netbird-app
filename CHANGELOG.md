@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.4.0] - 2026-10-14
 
-- Use Cloudron's platform STUN service by default through the optional `turn`
-  addon. New installs no longer need a dedicated STUN UDP port; only
+- Use Cloudron's platform STUN service by default through the `turn` addon
+  (required, because Cloudron disables optional addons at install). New installs no longer need a dedicated STUN UDP port; only
   unauthenticated STUN is used, so the TURN secret is never read and NetBird's
   built-in relay remains the fallback for peers that cannot connect directly.
 - Make the dedicated `STUN_PORT` opt-in (disabled by default, default 3479).

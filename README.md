@@ -61,10 +61,8 @@ open on Cloudron). Clients only send unauthenticated STUN Binding requests to
 it; Cloudron's TURN credentials are not used. NetBird's built-in relay still
 handles peers that cannot connect directly. To run NetBird's own STUN server
 instead, enable the optional dedicated STUN port (default 3479) in the app's
-Location settings. Installations updated from 2.3.x keep their existing STUN
-port binding, and therefore their embedded STUN server, until you disable it.
-If neither the TURN addon nor the dedicated port is available, peers rely on
-host candidates and the relay.
+Location settings. Existing installations keep their STUN port binding, and
+therefore their embedded STUN server, until you disable it.
 
 ## Installation
 

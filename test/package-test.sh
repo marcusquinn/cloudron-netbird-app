@@ -79,7 +79,7 @@ assert_optional_sso_contract() {
 
 assert_stun_and_trust_contract() {
 	jq -e '.udpPorts.STUN_PORT.containerPort == null' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "STUN must use the selected external port inside the container" || return 1
-	jq -e '.addons.turn.optional == true and .udpPorts.STUN_PORT.enabledByDefault == false and .udpPorts.STUN_PORT.defaultValue != 3478' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Cloudron STUN must be the default with an opt-in dedicated STUN port" || return 1
+	jq -e '.addons.turn == {} and .udpPorts.STUN_PORT.enabledByDefault == false and .udpPorts.STUN_PORT.defaultValue != 3478' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Cloudron STUN must be the default with an opt-in dedicated STUN port" || return 1
 	# shellcheck disable=SC2016 # Assert the generated-config placeholders literally.
 	assert_contains start.sh '- uri: \"stun:${CLOUDRON_TURN_SERVER}:${CLOUDRON_TURN_PORT}\"' || return 1
 	if grep -Fq 'CLOUDRON_TURN_SECRET}' "${ROOT_DIR}/start.sh"; then

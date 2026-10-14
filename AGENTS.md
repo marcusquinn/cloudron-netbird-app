@@ -65,7 +65,8 @@ silently link or promote an external identity.
 
 ### STUN: Cloudron service by default, embedded STUN opt-in
 
-Default to Cloudron's platform STUN via the optional `turn` addon
+Default to Cloudron's platform STUN via the required `turn` addon (optional
+addons are disabled at install time)
 (`server.stuns` from `CLOUDRON_TURN_SERVER`/`CLOUDRON_TURN_PORT`); never read
 `CLOUDRON_TURN_SECRET` or advertise Cloudron's TURN relay (incompatible
 time-limited credentials). An operator-bound `STUN_PORT` keeps NetBird's

@@ -221,7 +221,7 @@ select_stun_config() {
     fi
 
     STUN_CONFIG=""
-    echo "WARNING: Neither Cloudron TURN nor the optional STUN port is available; NAT discovery may fail and peers may fall back to the relay. Enable TURN for this app or bind the STUN port." >&2
+    echo "WARNING: Neither Cloudron TURN nor the optional STUN port is available; NAT discovery may fail and peers may fall back to the relay. Check the Cloudron TURN service or bind the STUN port." >&2
     return 0
 }
 

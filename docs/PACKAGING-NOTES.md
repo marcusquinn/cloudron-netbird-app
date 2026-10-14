@@ -42,7 +42,7 @@ Key design decisions:
 | `localstorage` | Persistent data | `/app/data/` for config, encryption key, auth secret |
 | `oidc` | Optional Cloudron SSO client | Install-time credentials for manual owner-managed registration; callback `/oauth2/callback` |
 | `tls` | Native TLS certificate | Cloudron certificate files on nginx port 33074 |
-| `turn` (optional) | Default STUN source | `CLOUDRON_TURN_SERVER`/`CLOUDRON_TURN_PORT` -> `server.stuns`; STUN only |
+| `turn` | Default STUN source (required: Cloudron disables optional addons at install) | `CLOUDRON_TURN_SERVER`/`CLOUDRON_TURN_PORT` -> `server.stuns`; STUN only |
 
 ### STUN source selection
 
