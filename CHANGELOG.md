@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-10-14
+
+- Fix the optional second-IP reverse-proxy ingress (`scripts/netbird-ingress.py`)
+  not recovering after a host reboot. nftables state is not persisted, and the
+  boot-time `up` refused to start because the app container already published
+  `PROXY_PORT` on the backend port. That left public ingress down and the backend
+  port reachable from outside. Only first activation now requires both ports to
+  be unused; re-applying an activated configuration keeps its reviewed ports.
+- `reconcile` (the 30-second timer) now queues a restart of a *failed* ingress or
+  TLS bridge unit instead of treating it like an intentional stop. Intentional
+  stops are still respected.
+- Host files are not part of the app image: replace
+  `/etc/netbird-ingress/netbird-ingress.py` with the released file to apply.
+
 ## [2.4.0] - 2026-10-14
 
 - Use Cloudron's platform STUN service by default through the `turn` addon

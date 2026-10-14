@@ -196,10 +196,20 @@ def require_unused_ports(c):
                     raise ValueError('Ingress port is already reserved by a Docker container: ' + port)
 
 
+def previously_activated():
+    """True once a successful activation recorded its rule signature."""
+    return (ROOT / 'installed-rules.json').exists()
+
+
 def up(c):
     preflight(c)
     exists = run('nft', 'list', 'table', 'inet', TABLE, check=False).returncode == 0
-    if not exists:
+    # Reserve ports only on first activation. nftables state is not persisted,
+    # so after a reboot the table is absent while Docker already publishes the
+    # app's PROXY_PORT on the backend port (and the bridge may hold the
+    # frontend). Refusing then would leave ingress down and the backend
+    # unguarded; re-applying this helper's reviewed ports is the safe action.
+    if not exists and not previously_activated():
         require_unused_ports(c)
     text = ('delete table inet ' + TABLE + '\n' if exists else '') + rules(c)
     run('nft', '--check', '-f', '-', data=text)
@@ -245,10 +255,31 @@ def check(c):
     print('Ingress guard, INPUT allowance, address and HAProxy configuration verified')
 
 
+def unit_state(name):
+    return (run('systemctl', 'is-active', name, check=False).stdout or '').strip()
+
+
 def reconcile(c):
-    # Respect an intentional stop/rollback. Never reactivate a stopped ingress.
-    if run('systemctl', 'is-active', '--quiet', 'netbird-ingress.service', check=False).returncode:
+    ingress = unit_state('netbird-ingress.service')
+    if ingress == 'failed':
+        # A failed start (for example at boot) is not an intentional stop.
+        # Queue a restart without waiting: the unit's own `up` needs the lock
+        # this process holds. Start the bridge too if the operator enabled it,
+        # because its dependency failure left it inactive.
+        units = ['netbird-ingress.service']
+        if run('systemctl', 'is-enabled', '--quiet', 'netbird-tcp-bridge.service', check=False).returncode == 0:
+            units.append('netbird-tcp-bridge.service')
+        run('systemctl', 'reset-failed', 'netbird-ingress.service', check=False)
+        run('systemctl', 'start', '--no-block', *units)
+        print('Queued restart of failed managed ingress', file=sys.stderr)
         return
+    # Respect an intentional stop/rollback. Never reactivate a stopped ingress.
+    if ingress != 'active':
+        return
+    if unit_state('netbird-tcp-bridge.service') == 'failed':
+        run('systemctl', 'reset-failed', 'netbird-tcp-bridge.service', check=False)
+        run('systemctl', 'start', '--no-block', 'netbird-tcp-bridge.service')
+        print('Queued restart of failed TLS bridge', file=sys.stderr)
     try:
         check(c)
     except (ValueError, OSError, subprocess.SubprocessError):

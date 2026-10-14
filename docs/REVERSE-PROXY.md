@@ -127,7 +127,13 @@ Invalid domain/trust configuration exits with code 78 (no restart storm).
 
 The 30-second timer detects changes to this helper's rules and INPUT ordering
 and reapplies only its own state while the ingress service is active. It respects
-an intentional service stop. A missing INPUT allowance or NAT rule fails closed
+an intentional service stop. A *failed* ingress or bridge unit is not a stop:
+the timer queues a restart. nftables state is not persisted across reboot, so
+the boot-time `up` re-applies the helper's reviewed ports even though Docker
+already publishes `PROXY_PORT`; only first activation insists both ports are
+unused. Docker can publish the backend port a few seconds before the guard
+returns at boot; the timer bounds any longer gap to about 90 seconds after boot.
+A missing INPUT allowance or NAT rule fails closed
 while the separate guard remains intact. No software can promise that isolation
 survives an administrator flushing the entire firewall; do not do so.
 
