@@ -16,6 +16,8 @@ Do not create duplicate root copies of these guides.
   stable identities, recovery and exact on/off semantics.
 - [Public reverse proxy](REVERSE-PROXY.md) and
   [ingress hardening](INGRESS-HARDENING.md): separately managed host resources.
+- [External monitoring](MONITORING.md): recommended updown.io checks for the app,
+  native port, proxy ingress and backend exposure.
 - [Multiple instances](MULTI-INSTANCE.md): brand isolation and port/IP allocation.
 - [Publishing](PUBLISHING.md): immutable images, catalog and provenance.
 - [Qualification matrix](../test/QUALIFICATION.md): verified versus unexecuted

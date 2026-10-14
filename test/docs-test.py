@@ -7,7 +7,7 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 GUIDES = ('PACKAGING-NOTES', 'PUBLISHING', 'SSO-SWITCH', 'MULTI-INSTANCE',
-          'INGRESS-HARDENING', 'REVERSE-PROXY')
+          'INGRESS-HARDENING', 'REVERSE-PROXY', 'MONITORING')
 
 
 class DocumentationTest(unittest.TestCase):

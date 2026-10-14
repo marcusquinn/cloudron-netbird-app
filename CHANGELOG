@@ -1,3 +1,7 @@
+[2.4.2]
+* Native NetBird clients can now connect over IPv6 on IPv6-enabled servers; previously only IPv4 worked.
+* Add an external monitoring guide with a recommended updown.io check plan for the app, native port and optional proxy.
+
 [2.4.1]
 * Optional reverse-proxy host helper: restore the public ingress and backend port guard automatically after a server reboot.
 * The ingress check timer now restarts a failed ingress or bridge service instead of reporting success. Replace the host helper file to apply; the app image is unchanged.

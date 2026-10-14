@@ -208,6 +208,12 @@ endpoint, served through the internal nginx proxy on port 8080. The combined
 server also exposes a health endpoint on port 9000, which is not routed through
 nginx.
 
+### External Monitoring
+
+Cloudron's health check does not cover the native client port or the optional
+proxy ingress. We recommend [updown.io](https://updown.io/r/kddkt) (referral
+link) with the check plan in [external monitoring](docs/MONITORING.md).
+
 ### Persistent Data
 
 All persistent data is stored in `/app/data/` (Cloudron's `localstorage` addon) and included in Cloudron backups:

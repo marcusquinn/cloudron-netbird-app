@@ -335,6 +335,17 @@ location ~ ^/api/setup(/|$) {
 SETUP_GUARD
 fi
 
+# Docker publishes NETBIRD_PORT over IPv6 when the Cloudron network has IPv6,
+# so the native listener must accept it too. Bind [::] only when the container
+# has IPv6: nginx refuses to start on an unsupported address family.
+: >/run/nginx/listen-ipv6.conf
+if [[ -s /proc/net/if_inet6 ]]; then
+    echo 'listen [::]:33074 ssl http2;' >/run/nginx/listen-ipv6.conf
+    echo "==> Native transport: IPv4 and IPv6"
+else
+    echo "==> Native transport: IPv4 only (container has no IPv6)"
+fi
+
 cat >/app/data/config/nginx.conf.template <<'NGINX_EOF'
 worker_processes auto;
 pid /run/nginx/nginx.pid;
@@ -379,6 +390,7 @@ http {
     server {
         listen 8080;
         listen 33074 ssl http2;
+        include /run/nginx/listen-ipv6.conf;
         server_name _;
 
         ssl_certificate /etc/certs/tls_cert.pem;
