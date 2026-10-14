@@ -24,7 +24,7 @@ and for the optional proxy, the second IPv4 `IP2` and `PROXY_PORT` (default 1844
 |-------|-----|-------|---------|
 | App, IdP and API | `https://APP_DOMAIN/oauth2/.well-known/openid-configuration` | `issuer` | App down, unhealthy or misrouted |
 | Native clients (IPv4) | `tcp://IP1:NETBIRD_PORT` | | Clients cannot register, sync or relay |
-| Native clients (IPv6) | `tcp://[IP1_V6]:NETBIRD_PORT` | | IPv6-only clients cannot connect (2.4.2+) |
+| Native clients (IPv6) | `tcp://[IP1_V6]:NETBIRD_PORT` | | IPv6-only clients cannot connect (2.4.3+) |
 | Proxy ingress (optional) | `tcp://IP2:443` | | Public proxy route down, e.g. after a reboot |
 | Proxy backend exposure (optional) | `tcp://IP1:PROXY_PORT` | `<closed>` | Host guard missing; backend reachable from the internet |
 
