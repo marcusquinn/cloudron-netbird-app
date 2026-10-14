@@ -26,7 +26,8 @@ and for the optional proxy, the second IPv4 `IP2` and `PROXY_PORT` (default 1844
 | Native clients (IPv4) | `tcp://IP1:NETBIRD_PORT` | | Clients cannot register, sync or relay |
 | Native clients (IPv6) | `tcp://[IP1_V6]:NETBIRD_PORT` | | IPv6-only clients cannot connect (2.4.3+) |
 | Proxy ingress (optional) | `tcp://IP2:443` | | Public proxy route down, e.g. after a reboot |
-| Proxy backend exposure (optional) | `tcp://IP1:PROXY_PORT` | `<closed>` | Host guard missing; backend reachable from the internet |
+| Proxy backend exposure, IPv4 (optional) | `tcp://IP1:PROXY_PORT` | `<closed>` | Host guard missing; backend reachable from the internet |
+| Proxy backend exposure, IPv6 (optional) | `tcp://[IP1_V6]:PROXY_PORT` | `<closed>` | Same, over IPv6 |
 
 Notes:
 
@@ -37,7 +38,8 @@ Notes:
   To test end to end, add an HTTPS check for one real published service.
 - `<closed>` inverts a TCP check: it alerts when the port accepts connections.
   The backend port must only be reachable from the host itself
-  ([reverse proxy](REVERSE-PROXY.md)).
+  ([reverse proxy](REVERSE-PROXY.md)). Docker publishes app ports over IPv6
+  as well as IPv4, so on an IPv6 server check both address families.
 - A 5-minute interval detects outages quickly at very low cost. Shorter
   intervals cost more and rarely help with this kind of failure.
 
@@ -57,7 +59,12 @@ create_check "https://APP_DOMAIN/oauth2/.well-known/openid-configuration" "NetBi
 create_check "tcp://IP1:NETBIRD_PORT" "NetBird native clients (IPv4)"
 create_check "tcp://IP2:443" "NetBird proxy ingress"
 create_check "tcp://IP1:PROXY_PORT" "NetBird proxy backend must stay closed" "<closed>"
+# On an IPv6 server, add the IPv6 equivalents:
+create_check "tcp://[IP1_V6]:NETBIRD_PORT" "NetBird native clients (IPv6)"
+create_check "tcp://[IP1_V6]:PROXY_PORT" "NetBird proxy backend must stay closed (IPv6)" "<closed>"
 ```
+
+The API rejects a URL that is already registered, so re-running is safe.
 
 To choose alert channels, list their IDs with `GET /api/recipients` and add
 `-d "recipients[]=ID"` for each one. Without it, updown uses its default
