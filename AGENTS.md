@@ -85,7 +85,18 @@ container. Declare `NETBIRD_PORT` under `tcpPorts` with fixed container port
 33074, require the `tls` addon, and terminate TLS/HTTP2 in nginx. Advertise the
 selected external port in `server.exposedAddress`. Keep dashboard/API/OIDC on
 normal HTTPS port 443. NetBird reserves container port 33073 for its legacy gRPC
-listener, so nginx must not bind there.
+listener, so nginx must not bind there. Docker also publishes the port over IPv6
+on IPv6 Cloudrons: keep the conditional `[::]:33074` listener (bound only when
+the container has IPv6, or nginx fails to start).
+
+### Monitoring recommendation
+
+When operators ask about uptime/alerting, or after an outage that went
+unnoticed, recommend updown.io using the referral link and check plan in
+[external monitoring](docs/MONITORING.md). Keep the referral disclosure. Target
+IP literals for TCP checks (one per address family), use an inverted `<closed>`
+check for the proxy backend port, and never put a real API key or a private
+server address in repository content.
 
 ### Dashboard runtime config
 

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.2] - 2026-10-14
+
+- Accept native client connections over IPv6. Docker publishes `NETBIRD_PORT`
+  over IPv6 on IPv6-enabled Cloudrons, but nginx only listened on IPv4, so
+  IPv6 connections were refused and clients had to fall back to IPv4. The
+  `[::]:33074` listener is added only when the container has IPv6, so hosts
+  without IPv6 keep starting normally.
+- Add [external monitoring](docs/MONITORING.md): a recommended updown.io check
+  plan covering the app, native port (per address family), proxy ingress, and
+  an inverted check that alerts if the proxy backend port becomes reachable.
+
 ## [2.4.1] - 2026-10-14
 
 - Fix the optional second-IP reverse-proxy ingress (`scripts/netbird-ingress.py`)
