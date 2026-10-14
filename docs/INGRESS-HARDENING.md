@@ -30,6 +30,9 @@ unqualified TLS terminator or turn on a CDN proxy that breaks TLS-ALPN-01.
 
 An app image update does **not** update host files. Follow `REVERSE-PROXY.md` to
 install the matching helper using the existing exact IP/interface/port settings.
+For a helper-only fix with unchanged units and configuration, atomically replace
+`/etc/netbird-ingress/netbird-ingress.py` with the reviewed release file, then
+run `check`; no service restart is required.
 Preserve the original host snapshot and current configuration first. Upgrading
 the unit requires one dedicated bridge restart to create its private runtime
 directory and statistics socket. Subsequent protection changes use graceful

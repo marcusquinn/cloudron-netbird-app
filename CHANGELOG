@@ -1,3 +1,7 @@
+[2.4.1]
+* Optional reverse-proxy host helper: restore the public ingress and backend port guard automatically after a server reboot.
+* The ingress check timer now restarts a failed ingress or bridge service instead of reporting success. Replace the host helper file to apply; the app image is unchanged.
+
 [2.4.0]
 * Use Cloudron's platform STUN service by default; new installs no longer need a dedicated STUN UDP port.
 * Make the dedicated STUN port optional; existing installs keep their binding and NetBird's own STUN server.

@@ -114,15 +114,51 @@ class IngressTest(unittest.TestCase):
                 self.assertEqual((root / name).read_text(), text)
 
     def test_stopped_service_never_reactivated(self):
-        with patch.object(M, 'run', return_value=subprocess.CompletedProcess([], 3)), patch.object(M, 'up') as up:
+        with patch.object(M, 'run', return_value=subprocess.CompletedProcess([], 3, stdout='inactive\n')) as run, \
+             patch.object(M, 'up') as up:
             M.reconcile(self.config)
             up.assert_not_called()
+            self.assertFalse(any('start' in call.args for call in run.call_args_list))
 
     def test_drift_repaired_only_when_service_active(self):
-        with patch.object(M, 'run', return_value=subprocess.CompletedProcess([], 0)), \
+        with patch.object(M, 'run', return_value=subprocess.CompletedProcess([], 0, stdout='active\n')), \
              patch.object(M, 'check', side_effect=[ValueError('drift'), None]), patch.object(M, 'up') as up:
             M.reconcile(self.config)
             up.assert_called_once_with(self.config)
+
+    def test_failed_boot_start_is_queued_for_restart_without_lock_wait(self):
+        def fake_run(*args, **kwargs):
+            state = 'failed\n' if args[:2] == ('systemctl', 'is-active') else ''
+            return subprocess.CompletedProcess(args, 0, stdout=state)
+        with patch.object(M, 'run', side_effect=fake_run) as run, patch.object(M, 'up') as up, \
+             patch.object(M, 'check') as check:
+            M.reconcile(self.config)
+            up.assert_not_called()
+            check.assert_not_called()
+            self.assertIn(('systemctl', 'start', '--no-block', 'netbird-ingress.service',
+                           'netbird-tcp-bridge.service'), [call.args for call in run.call_args_list])
+
+    def test_reapply_after_reboot_keeps_reviewed_ports(self):
+        # Docker already publishes the backend port; the table vanished at reboot.
+        def fake_run(*args, **kwargs):
+            if args[:3] == ('nft', 'list', 'table'):
+                return subprocess.CompletedProcess(args, 1, stdout='')
+            if args[0] == 'ss':
+                return subprocess.CompletedProcess(args, 0, stdout='LISTEN 0 4096 0.0.0.0:18444 0.0.0.0:*\n')
+            return subprocess.CompletedProcess(args, 0, stdout='{}')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'installed-rules.json').write_text('{}')
+            with patch.object(M, 'ROOT', root), patch.object(M, 'preflight'), \
+                 patch.object(M, 'run', side_effect=fake_run) as run, \
+                 patch.object(M, 'rule_signature', return_value={}), \
+                 patch.object(M, 'allowance_precedes_cloudron', return_value=True), \
+                 patch.object(M, 'addresses', return_value=[]):
+                M.up(self.config)
+            commands = [call.args for call in run.call_args_list]
+            self.assertFalse(any(args[0] in ('ss', 'docker') for args in commands))
+            self.assertIn(('nft', '-f', '-'), commands)
+            self.assertEqual(commands[-1][:4], ('ip', 'address', 'add', '9.9.9.9/32'))
 
     def test_first_activation_rejects_host_listener_before_mutation(self):
         for address in ('0.0.0.0:18443', '[::]:18444', '127.0.0.1:18444'):
@@ -130,7 +166,8 @@ class IngressTest(unittest.TestCase):
                 if args[0] == 'nft':
                     return subprocess.CompletedProcess(args, 1, stdout='')
                 return subprocess.CompletedProcess(args, 0, stdout=f'LISTEN 0 128 {address} *:*\n')
-            with self.subTest(address=address), patch.object(M, 'preflight'), \
+            with self.subTest(address=address), tempfile.TemporaryDirectory() as directory, \
+                 patch.object(M, 'ROOT', Path(directory)), patch.object(M, 'preflight'), \
                  patch.object(M, 'run', side_effect=fake_run) as run:
                 with self.assertRaisesRegex(ValueError, 'already occupied'):
                     M.up(self.config)
