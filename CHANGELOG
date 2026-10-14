@@ -1,3 +1,6 @@
+[2.4.4]
+* Monitoring guide: also check that the proxy backend port is closed over IPv6. The app image is unchanged.
+
 [2.4.3]
 * Fix IPv6 detection so the IPv6 native client listener from 2.4.2 is actually enabled on IPv6-enabled servers.
 

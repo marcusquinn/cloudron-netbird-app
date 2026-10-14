@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.4] - 2026-10-14
+
+- [External monitoring](docs/MONITORING.md): add the IPv6 `<closed>` check for
+  the proxy backend port and IPv6 checks to the API example. Docker publishes
+  app ports over IPv6 too, so on an IPv6 server the backend must be checked
+  on both address families. Documentation only; runtime behaviour is unchanged.
+
 ## [2.4.3] - 2026-10-14
 
 - Fix IPv6 detection for the native client listener. 2.4.2 tested
