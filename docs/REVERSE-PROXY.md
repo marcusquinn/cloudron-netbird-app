@@ -78,9 +78,11 @@ NetBird's IP restrictions (covered by the live smoke check).
    systemctl enable --now netbird-ingress-check.timer
    ```
 
-6. Install/update the Cloudron app, explicitly binding `NETBIRD_PORT`, `STUN_PORT`
-   and `PROXY_PORT=18444`. Use an unused STUN port (3478 is often Cloudron TURN).
-   Budget at least 1 GiB for initial proxy qualification, then measure your load.
+6. Install/update the Cloudron app, explicitly binding `NETBIRD_PORT` and
+   `PROXY_PORT=18444`. STUN uses Cloudron's platform service by default; bind
+   `STUN_PORT` only if you want NetBird's own STUN server, and never on 3478
+   while Cloudron TURN uses it. The proxy ingress forwards TCP only and does not
+   affect STUN UDP. Budget at least 1 GiB for initial proxy qualification, then measure your load.
 7. Set these app environment variables as **separate arguments**, not a single
    space-containing `KEY=value` argument:
 

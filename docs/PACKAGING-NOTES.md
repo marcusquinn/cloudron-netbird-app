@@ -42,12 +42,28 @@ Key design decisions:
 | `localstorage` | Persistent data | `/app/data/` for config, encryption key, auth secret |
 | `oidc` | Optional Cloudron SSO client | Install-time credentials for manual owner-managed registration; callback `/oauth2/callback` |
 | `tls` | Native TLS certificate | Cloudron certificate files on nginx port 33074 |
+| `turn` (optional) | Default STUN source | `CLOUDRON_TURN_SERVER`/`CLOUDRON_TURN_PORT` -> `server.stuns`; STUN only |
 
-### Addons NOT used (and why)
+### STUN source selection
 
-| Addon | Why not |
-|-------|---------|
-| `turn` | NetBird's combined server already supplies relay/STUN. Cloudron TURN expects time-limited credentials derived from its shared secret, while NetBird's external STUN/TURN entries accept static credentials; advertising the addon directly would fail authentication. |
+`start.sh` chooses one STUN source per start; NetBird's built-in relay stays
+enabled in every mode:
+
+1. **Optional `STUN_PORT` bound** -- NetBird's embedded STUN server listens on
+   that UDP port (`server.stunPorts`). Existing installs keep this binding
+   across updates, so their behaviour does not change.
+2. **Otherwise, TURN addon enabled** -- `server.stuns` advertises
+   `stun:${CLOUDRON_TURN_SERVER}:${CLOUDRON_TURN_PORT}`, which disables the
+   local STUN listener. STUN Binding requests are unauthenticated, so
+   `CLOUDRON_TURN_SECRET` is never read.
+3. **Neither** -- startup logs a warning; peers use host candidates and relay.
+
+Cloudron's TURN *relay* is still not advertised. It issues time-limited
+credentials derived from its shared secret, while NetBird's external TURN
+entries accept static credentials only.
+
+The dedicated port defaults to 3479 and is disabled by default because Cloudron
+TURN normally owns UDP 3478 on the same host.
 
 `optionalSso: true` makes the declared OIDC addon an installation choice. The
 Cloudron SSO flag cannot be changed after installation, so a `--no-sso` instance
@@ -78,6 +94,10 @@ configuration](https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-c
 - WebSocket paths need `proxy_http_version 1.1` and `Upgrade`/`Connection` headers.
 - Timeouts must be `1d` for long-lived gRPC and WebSocket connections.
 - The combined server listens on port 80 internally (not 8081 as in the old architecture).
+- `server.reverseProxy.trustedPeers` is limited to loopback (`127.0.0.1/32`,
+  `::1/128`). Only the in-container nginx and bundled proxy connect over
+  loopback, so other containers cannot forge `X-Forwarded-For`. NetBird's empty
+  default trusts every source and logs a default-route warning.
 - The native listener's dashboard redirect uses the configured Cloudron domain,
   never the incoming `Host` header. Explicit native transport, API, and OAuth
   locations remain proxied without redirects.
@@ -86,7 +106,7 @@ configuration](https://docs.netbird.io/selfhosted/external-reverse-proxy#nginx-c
 
 | Challenge | Solution | Risk |
 |-----------|----------|------|
-| **Configurable UDP STUN** | Use `udpPorts` without a fixed `containerPort` so NetBird listens on the same port Cloudron exposes | Low -- avoids split listen/advertised ports |
+| **STUN without an extra port** | Advertise Cloudron's platform STUN by default; keep an opt-in `udpPorts` entry without a fixed `containerPort` for embedded STUN | Low -- relay is independent of STUN |
 | **gRPC over HTTP/2** | Dedicated TLS listener using Cloudron's certificate, then nginx `grpc_pass` to h2c | Medium -- requires live client qualification |
 | **Combined server binary** | NetBird v0.65+ ships a single `netbird-server` binary | Low -- simplifies packaging |
 | **Embedded IdP** | `config.yaml` with `server.auth.*` enables Dex automatically | Low -- upstream default |
@@ -104,7 +124,8 @@ not a substitute for a current candidate run or production qualification.
 2. **gRPC routing** -- Signal and Management negotiate HTTP/2 on the dedicated
    TLS port and pass through nginx `grpc_pass`.
 3. **WebSocket routing** -- Relay and ws-proxy connections with proper Upgrade headers
-4. **STUN UDP port** -- Verify Cloudron's `udpPorts` exposes the selected UDP port
+4. **STUN source** -- Verify clients receive Cloudron STUN by default, or the
+   selected UDP port when the optional dedicated STUN port is enabled
 5. **Client connectivity** -- Clients connect with a setup key and
    `https://<app-domain>:<NETBIRD_PORT>`.
 6. **Peer-to-peer mesh** -- Peers can communicate through WireGuard tunnels

@@ -7,15 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-14
+
+- Use Cloudron's platform STUN service by default through the optional `turn`
+  addon. New installs no longer need a dedicated STUN UDP port; only
+  unauthenticated STUN is used, so the TURN secret is never read and NetBird's
+  built-in relay remains the fallback for peers that cannot connect directly.
+- Make the dedicated `STUN_PORT` opt-in (disabled by default, default 3479).
+  When bound, NetBird's embedded STUN server is used as before; existing
+  installations keep their binding and behaviour after the update.
+- Restrict `server.reverseProxy.trustedPeers` to loopback so only the
+  in-container nginx and bundled proxy can supply forwarded client addresses.
+  This removes NetBird's default-route `TrustedPeers` warning.
 - Upgrade the final Cloudron base image from `5.1.0` to `6.0.0`, pinned to
   `sha256:9bed4c8fa880645f8e669041ee28febe941481d00e9445e3e5a5483cb541d09b`.
 - Explicitly install `iproute2` to retain the `ss` utility used by startup after
   its removal from the base image. The package uses prebuilt NetBird binaries
   and dashboard assets, so no Node, PHP, Apache, pip/venv or mongosh migration
   is required. Retain the existing Cloudron `9.1.0` minimum.
-- The upgrade passed a local disposable-container build and runtime smoke check;
-  production Cloudron migration and backup/restore qualification remain pending.
-  This entry does not publish a package, image or catalog update.
+- Update the dashboard to `v2.94.0`.
 
 ## [2.3.1] - 2026-10-09
 
