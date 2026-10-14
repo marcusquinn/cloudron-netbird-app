@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.3] - 2026-10-14
+
+- Fix IPv6 detection for the native client listener. 2.4.2 tested
+  `/proc/net/if_inet6` with `[[ -s ]]`, but procfs files always report size 0,
+  so the `[::]:33074` listener was never enabled and the log always said
+  "IPv4 only". Detection now checks the file has content.
+
 ## [2.4.2] - 2026-10-14
 
 - Accept native client connections over IPv6. Docker publishes `NETBIRD_PORT`

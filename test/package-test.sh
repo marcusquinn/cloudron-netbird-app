@@ -48,7 +48,11 @@ assert_native_listener_contract() {
 	# Docker publishes NETBIRD_PORT over IPv6 too; bind it only when available.
 	assert_contains start.sh "echo 'listen [::]:33074 ssl http2;' >/run/nginx/listen-ipv6.conf" || return 1
 	assert_contains start.sh 'include /run/nginx/listen-ipv6.conf;' || return 1
-	assert_contains start.sh 'if [[ -s /proc/net/if_inet6 ]]; then' || return 1
+	# procfs files report size 0, so [[ -s ]] is always false there.
+	assert_contains start.sh 'if grep -qs . /proc/net/if_inet6; then' || return 1
+	if grep -Fq -- '-s /proc/' "${ROOT_DIR}/start.sh"; then
+		fail "start.sh must not size-test procfs files" || return 1
+	fi
 	assert_native_dashboard_redirect_contract || return 1
 	return 0
 }
@@ -101,7 +105,7 @@ assert_stun_and_trust_contract() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.4.2" and .upstreamVersion == "0.80.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.4.3" and .upstreamVersion == "0.80.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/docs/PUBLISHING.md" ]] || fail "Publishing guide is missing" || return 1

@@ -1,3 +1,6 @@
+[2.4.3]
+* Fix IPv6 detection so the IPv6 native client listener from 2.4.2 is actually enabled on IPv6-enabled servers.
+
 [2.4.2]
 * Native NetBird clients can now connect over IPv6 on IPv6-enabled servers; previously only IPv4 worked.
 * Add an external monitoring guide with a recommended updown.io check plan for the app, native port and optional proxy.
