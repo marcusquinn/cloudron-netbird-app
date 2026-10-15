@@ -22,7 +22,8 @@ RUN chmod +x /app/code/bin/netbird-server
 
 COPY --from=proxy /go/bin/netbird-proxy /app/code/bin/netbird-proxy
 COPY scripts/start-proxy.sh /app/code/start-proxy.sh
-RUN chmod +x /app/code/bin/netbird-proxy /app/code/start-proxy.sh
+COPY scripts/setup-sso-bootstrap.py /app/code/setup-sso-bootstrap.py
+RUN chmod +x /app/code/bin/netbird-proxy /app/code/start-proxy.sh /app/code/setup-sso-bootstrap.py
 
 # Copy the independently pinned dashboard release.
 COPY --from=dashboard /usr/share/nginx/html/ /app/code/dashboard/

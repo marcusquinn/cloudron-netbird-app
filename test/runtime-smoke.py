@@ -175,9 +175,9 @@ class SmokeCheck:
         if nginx_test[0] != 0:
             raise SmokeError("generated nginx configuration is invalid")
 
-    def http(self, path, method="GET", data=None):
+    def http(self, path, method="GET", data=None, max_time=2):
         args = [
-            "exec", self.app, "curl", "-fsSL", "--max-redirs", "3", "--max-time", "2",
+            "exec", self.app, "curl", "-fsSL", "--max-redirs", "3", "--max-time", str(max_time),
             "--request", method, "--header", "Content-Type: application/json",
             "--write-out", "\n%{http_code}",
         ]
@@ -200,12 +200,41 @@ class SmokeCheck:
             "email": self.owner_email,
             "password": self.owner_password,
             "name": "Smoke Owner",
-        })
+        }, max_time=18)
         if response[0]:
             raise SmokeError("unauthenticated initial owner setup failed")
         result = json.loads(response[1])
         if result.get("email") != self.owner_email or not result.get("user_id"):
             raise SmokeError("initial owner setup response mismatch")
+        if "personal_access_token" in result:
+            raise SmokeError("setup response exposed a personal access token")
+
+    def database_value(self, query):
+        return self.command("exec", self.database, "psql", "-U", "netbird", "-d", "netbird",
+                            "-Atc", query)[1].strip()
+
+    def setup_sso_bootstrap(self):
+        # The setup token must never outlive owner setup, with or without SSO.
+        if self.database_value("SELECT count(*) FROM personal_access_tokens") != "0":
+            raise SmokeError("a personal access token remained after owner setup")
+        sockets = self.command("exec", self.app, "ss", "-H", "-ltn", check=False)[1]
+        listening = "127.0.0.1:8081" in sockets
+        if listening != self.cloudron_sso_fixture:
+            raise SmokeError("SSO setup helper must run only when the OIDC addon is configured")
+        if not self.cloudron_sso_fixture:
+            return
+        # The fixture issuer is unreachable, so NetBird refuses the provider after
+        # the helper has required approval with the setup token, then deleted it.
+        approval = self.database_value("SELECT settings_extra_user_approval_required FROM accounts")
+        if approval != "t":
+            raise SmokeError("SSO setup helper did not require new-user approval")
+        logs = self.command("logs", self.app, check=False)
+        output = logs[1] + logs[2]
+        if "automatic registration failed" not in output or "setup token deleted" not in output:
+            # The helper's own lines never contain secrets; other log lines can.
+            helper = [line for line in output.splitlines() if "Cloudron SSO bootstrap:" in line]
+            raise SmokeError("SSO setup helper did not report fallback and token deletion: " +
+                             (" | ".join(helper) or "no helper output"))
 
     def dashboard_runtime_config(self):
         placeholders = self.command("exec", self.app, "grep", "-RIl",
@@ -216,6 +245,11 @@ class SmokeCheck:
                                   "https://" + DOMAIN, "/run/dashboard", check=False)
         if configured[0] != 0:
             raise SmokeError("dashboard runtime origin was not injected")
+        rosenpass = self.command("exec", self.app, "grep", "-RFl", "--include=*.js",
+                                 '"netbird up --enable-rosenpass --rosenpass-permissive"',
+                                 "/run/dashboard", check=False)
+        if rosenpass[0] != 0:
+            raise SmokeError("dashboard connect command lacks the default Rosenpass flags")
 
     def optional_sso_isolation(self):
         if not self.cloudron_sso_fixture:
@@ -375,6 +409,10 @@ class SmokeCheck:
         if self.instance_setup_required() is not False:
             raise SmokeError("instance still requires setup after owner creation")
         print("PASS: unauthenticated initial owner setup completed", flush=True)
+        self.stage = "setup token lifecycle"
+        self.setup_sso_bootstrap()
+        print("PASS: no setup token left; SSO helper " + (
+            "required approval and fell back safely" if self.cloudron_sso_fixture else "inactive"), flush=True)
         self.command("exec", self.app, "touch", "/app/data/smoke-persistence-marker")
         self.stage = "restart"
         self.command("restart", "--time", "10", self.app)

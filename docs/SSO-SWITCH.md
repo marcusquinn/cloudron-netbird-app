@@ -4,9 +4,38 @@ Run commands from the repository root. Cloudron app entitlement and VPN-provider
 support have separate [integration boundaries](CLOUDRON-INTEGRATION.md).
 
 New installs retain Cloudron's optional SSO checkbox (`optionalSso: true`) and
-`--no-sso`. Complete and test embedded owner login first. The install-time addon
-is one onboarding path; it is not necessary to rewrite an existing app's SSO
-flag, reinstall the app or migrate peers to add Cloudron login later.
+`--no-sso`. The install-time addon is one onboarding path; it is not necessary
+to rewrite an existing app's SSO flag, reinstall the app or migrate peers to add
+Cloudron login later.
+
+## Automatic registration on new installs with SSO
+
+From package 2.6.0, when the app is installed with Cloudron SSO ticked,
+creating the owner account at `/setup` also adds Cloudron as a login option:
+
+1. NetBird creates the owner and, only for this request, a one-day access token
+   (`NB_SETUP_PAT_ENABLED`, set only when the OIDC addon is complete).
+2. A loopback helper (`scripts/setup-sso-bootstrap.py`) uses the token to turn on
+   **new-user approval** and add a Generic OIDC provider named `Cloudron` with
+   the addon's issuer, client ID and secret.
+3. The helper deletes the token, checks it no longer works, and removes it from
+   the response to the browser. Nothing is stored or logged.
+
+The owner login is unchanged and remains the recovery login. Cloudron users
+who sign in wait under **Team > Users** until you approve them and give them a
+role. Nothing happens at app startup, and installs without SSO, existing
+installs and updates are unaffected: `/setup` only works while no user exists.
+
+If registration fails, for example because the Cloudron issuer was unreachable,
+owner setup still succeeds and the app log shows `automatic registration
+failed`. Add the provider by hand as in the README's
+[safe onboarding order](../README.md#safe-onboarding-order). If the log shows
+`could not delete the setup token`, delete the `setup-token` access token on the
+owner's user page; it expires within a day regardless.
+
+Manage an automatically added provider in NetBird under **Settings > Identity
+Providers**. `scripts/cloudron-sso.py` below does not take over a `Cloudron`
+provider it did not create.
 
 ## Managed switch for existing or new apps
 

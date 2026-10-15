@@ -95,21 +95,47 @@ The modes:
 - **Strict** (`--enable-rosenpass`): the device only builds tunnels with
   Rosenpass peers. A peer without Rosenpass can't connect to it.
 - **Permissive** (`--enable-rosenpass --rosenpass-permissive`): post-quantum
-  with Rosenpass peers, classic with the rest. Use it only while migrating, or
-  for peers that must reach devices without Rosenpass.
+  with Rosenpass peers, classic with the rest. Nothing breaks when a device
+  without Rosenpass joins, so this package uses it by default.
 - **Off** (the client default): classic WireGuard only.
 
-Recommended setup command for every new device:
+The default setup command for a new device. With the default
+`NETBIRD_CLIENT_ROSENPASS=permissive`, the dashboard's **Add Peer** dialog
+shows the same flags; if you changed that setting, use the command the dialog
+shows instead:
 
 ```sh
 sudo netbird up \
   --setup-key YOUR_SETUP_KEY \
   --management-url https://netbird.example.com:33073 \
-  --enable-rosenpass
+  --enable-rosenpass --rosenpass-permissive
 ```
 
 For an already-connected device, run `sudo netbird down`, then
-`sudo netbird up --enable-rosenpass`. The setting persists.
+`sudo netbird up --enable-rosenpass --rosenpass-permissive`. The setting
+persists. In the desktop app, turn on **Enable Quantum-Resistance** and
+**Enable Permissive Mode** under the security settings' Encryption section.
+
+### Dashboard command default
+
+`NETBIRD_CLIENT_ROSENPASS` sets the flags in the dashboard's copyable
+`netbird up` command:
+
+| Value | Flags |
+|-------|-------|
+| `permissive` (default) | `--enable-rosenpass --rosenpass-permissive` |
+| `strict` | `--enable-rosenpass` |
+| `off` | none |
+
+```sh
+cloudron env set --app APP_ID NETBIRD_CLIENT_ROSENPASS=strict
+```
+
+Any other value stops the app from starting, with an error in the log. This
+changes only the displayed command; it can't change devices that are already
+connected, or install-commands outside the dashboard.
+
+### Moving to strict mode
 
 Switch to strict mode in this order, or devices lose their tunnels:
 

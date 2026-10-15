@@ -44,6 +44,7 @@ assert_native_dashboard_redirect_contract() {
 }
 
 assert_post_quantum_tls_contract() {
+	assert_client_rosenpass_contract || return 1
 	# Default: TLS 1.3 with hybrid ML-KEM only; classic groups are an opt-in.
 	assert_contains start.sh 'export NETBIRD_TLS_PROTOCOLS="TLSv1.3"' || return 1
 	assert_contains start.sh 'export NETBIRD_TLS_GROUPS="X25519MLKEM768"' || return 1
@@ -102,12 +103,45 @@ qualification_contract() {
 
 assert_optional_sso_contract() {
 	jq -e '.optionalSso == true and .addons.oidc.loginRedirectUri == "/oauth2/callback" and .addons.oidc.logoutRedirectUri == "/oauth2/logout/callback" and .addons.oidc.tokenSignatureAlgorithm == "RS256"' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Optional Cloudron OIDC addon contract failed" || return 1
-	assert_contains start.sh 'Cloudron SSO credentials are available for owner-managed onboarding' || return 1
+	assert_contains start.sh 'Cloudron SSO credentials are available; first owner setup adds Cloudron as a login option' || return 1
 	assert_contains start.sh 'incomplete optional OIDC environment; embedded authentication remains available' || return 1
 	assert_contains README.md 'SSO-SWITCH.md' || return 1
 	if grep -Fq 'api/identity-providers' "${ROOT_DIR}/start.sh"; then
 		fail "Startup must not register an identity provider" || return 1
 	fi
+	assert_setup_sso_bootstrap_contract || return 1
+	return 0
+}
+
+assert_setup_sso_bootstrap_contract() {
+	# Setup-time token only when the OIDC addon is complete; routed over loopback.
+	assert_contains start.sh 'export NB_SETUP_PAT_ENABLED=true' || return 1
+	[[ "$(grep -Fc 'NB_SETUP_PAT_ENABLED' "${ROOT_DIR}/start.sh")" -eq 1 ]] || fail "NB_SETUP_PAT_ENABLED must be set only in the complete-OIDC branch" || return 1
+	assert_contains start.sh "echo 'location = /api/setup {'" || return 1
+	assert_contains start.sh "echo '    proxy_pass http://127.0.0.1:8081;'" || return 1
+	assert_contains supervisord.conf 'command=/app/code/setup-sso-bootstrap.py' || return 1
+	assert_contains Dockerfile 'COPY scripts/setup-sso-bootstrap.py /app/code/setup-sso-bootstrap.py' || return 1
+	assert_contains scripts/setup-sso-bootstrap.py "LISTEN = ('127.0.0.1', 8081)" || return 1
+	assert_contains scripts/setup-sso-bootstrap.py "payload['pat_expire_in'] = 1" || return 1
+	assert_contains scripts/setup-sso-bootstrap.py "result.pop('personal_access_token', None)" || return 1
+	assert_contains scripts/setup-sso-bootstrap.py "'user_approval_required': True" || return 1
+	assert_contains scripts/setup-sso-bootstrap.py 'a Cloudron identity provider already exists; left unchanged' || return 1
+	if grep -En "(log|warn|print)\(.*\+ *(client_secret|token|raw|body|payload|result)\b" "${ROOT_DIR}/scripts/setup-sso-bootstrap.py"; then
+		fail "SSO setup helper must not log secrets, tokens or bodies" || return 1
+	fi
+	python3 -m py_compile "${ROOT_DIR}/scripts/setup-sso-bootstrap.py" || return 1
+	return 0
+}
+
+assert_client_rosenpass_contract() {
+	# Default connect command: Rosenpass permissive; never touch grpcApiOrigin.
+	# shellcheck disable=SC2016 # Assert the shell expression literally.
+	assert_contains start.sh 'case "${NETBIRD_CLIENT_ROSENPASS:-permissive}" in' || return 1
+	assert_contains start.sh 'permissive) client_rosenpass_flags=" --enable-rosenpass --rosenpass-permissive" ;;' || return 1
+	assert_contains start.sh "NETBIRD_CLIENT_ROSENPASS must be 'permissive', 'strict' or 'off'" || return 1
+	# shellcheck disable=SC2016 # Assert the dashboard placeholder literally.
+	assert_contains start.sh 'export NETBIRD_MGMT_GRPC_API_ENDPOINT="https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"' || return 1
+	assert_contains docs/POST-QUANTUM.md 'NETBIRD_CLIENT_ROSENPASS' || return 1
 	return 0
 }
 
@@ -125,7 +159,7 @@ assert_stun_and_trust_contract() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.5.0" and .upstreamVersion == "0.80.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.6.0" and .upstreamVersion == "0.80.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/docs/PUBLISHING.md" ]] || fail "Publishing guide is missing" || return 1
@@ -154,7 +188,7 @@ main() {
 	assert_contains start.sh 'grep -RIlZ -- "AUTH_SUPPORTED_SCOPES" /run/dashboard' || return 1
 	# Keep the parent privileged for log/PID access; only its services drop privileges.
 	assert_contains start.sh 'exec /usr/bin/supervisord --configuration /app/code/supervisord.conf --nodaemon' || return 1
-	[[ "$(grep -Fc 'user=cloudron' "${ROOT_DIR}/supervisord.conf")" -eq 3 ]] || fail "All managed services must run as cloudron" || return 1
+	[[ "$(grep -Fc 'user=cloudron' "${ROOT_DIR}/supervisord.conf")" -eq 4 ]] || fail "All managed services must run as cloudron" || return 1
 	jq -e '.tcpPorts.PROXY_PORT.containerPort == 8443 and .tcpPorts.PROXY_PORT.enabledByDefault == false' "${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Proxy port must be opt-in" || return 1
 	assert_contains start.sh 'management\.(ManagementService|ProxyService)' || return 1
 	assert_contains scripts/start-proxy.sh 'NB_PROXY_HEALTH_ADDRESS=127.0.0.1:8445' || return 1

@@ -106,13 +106,14 @@ curl -fsSL https://pkgs.netbird.io/install.sh | sh
 sudo netbird up \
   --setup-key YOUR_SETUP_KEY \
   --management-url https://netbird.your-cloudron.example:33073 \
-  --enable-rosenpass
+  --enable-rosenpass --rosenpass-permissive
 ```
 
-`--enable-rosenpass` adds post-quantum keys to device tunnels and only connects
-to other Rosenpass devices. Use it on every device. To add it to a network
-whose devices don't have it yet, follow the migration order in
-[post-quantum protection](docs/POST-QUANTUM.md#device-tunnels-rosenpass).
+The Rosenpass flags add post-quantum keys to tunnels between devices that have
+it and still connect to devices that don't. The dashboard's **Add Peer**
+command includes them by default; see
+[post-quantum protection](docs/POST-QUANTUM.md#device-tunnels-rosenpass) for
+strict mode and the `NETBIRD_CLIENT_ROSENPASS` setting.
 The native client port accepts only post-quantum TLS by default, so clients
 must be NetBird 0.61.0 or later.
 
@@ -121,10 +122,16 @@ The `/setup` page is only accessible when no users exist. After creating the fir
 ## Adding Cloudron SSO (Optional)
 
 Cloudron's addon remains an install-time opt-in with `optionalSso: true` and
-`--no-sso`. Existing installs can also switch Cloudron login on/off through the
-supported custom OIDC client API, without changing their install-time flag or
-migrating peers. See [SSO switching and recovery](docs/SSO-SWITCH.md). Updates preserve
-embedded login; registration is never automatic at startup.
+`--no-sso`. With SSO ticked at install, creating the owner at `/setup` adds
+Cloudron as a login option automatically, with new-user approval required
+([details](docs/SSO-SWITCH.md#automatic-registration-on-new-installs-with-sso)).
+Existing installs can switch Cloudron login on/off through the supported custom
+OIDC client API, without changing their install-time flag or migrating peers.
+See [SSO switching and recovery](docs/SSO-SWITCH.md). Updates preserve embedded
+login; nothing is registered at startup.
+
+The manual steps below apply when automatic registration reported a failure, or
+when adding Cloudron to an install whose owner already exists.
 
 ### Safe onboarding order
 
@@ -154,10 +161,11 @@ embedded login; registration is never automatic at startup.
    button completes login before announcing SSO to users. Then sign back in with
    the embedded owner to prove fallback access still works.
 
-NetBird v0.79.0 intentionally requires an authenticated owner to create the
-connector. This package does not save an owner token or auto-register on startup:
-doing so could overwrite a differently configured provider, expose the client
-secret, or silently change identity ownership.
+NetBird requires an authenticated owner to create the connector. This package
+never saves an owner token or registers at startup: doing so could overwrite a
+differently configured provider, expose the client secret, or silently change
+identity ownership. The automatic path uses the owner's own setup request and
+a token deleted straight after.
 
 ### Identity and recovery rules
 
