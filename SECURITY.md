@@ -4,6 +4,7 @@
 
 | App Version | Upstream NetBird | Supported  |
 |-------------|------------------|-----------:|
+| 2.5.0       | 0.80.0           | Yes        |
 | 2.4.4       | 0.80.0           | Yes        |
 | 2.4.3       | 0.80.0           | Yes        |
 | 2.4.2       | 0.80.0           | Yes        |
@@ -80,6 +81,10 @@ This package implements the following security measures:
   X-Content-Type-Options, etc.) are set in the nginx config
 - **Native transport TLS**: Cloudron-managed certificates terminate the
   dedicated HTTP/2 client listener and renewals restart the app automatically
+- **Post-quantum native transport**: the client listener accepts only TLS 1.3
+  with the hybrid `X25519MLKEM768` key exchange unless an operator opts in to
+  classic groups. Port 443 and device tunnels have separate limits; see
+  [post-quantum protection](docs/POST-QUANTUM.md)
 - **Non-root nginx**: nginx worker processes run as the `cloudron` user
 - **PostgreSQL connection encryption**: Database connections use
   `sslmode=prefer` (opportunistic TLS), encrypting the connection when the

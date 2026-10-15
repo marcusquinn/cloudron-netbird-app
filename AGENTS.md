@@ -89,6 +89,13 @@ listener, so nginx must not bind there. Docker also publishes the port over IPv6
 on IPv6 Cloudrons: keep the conditional `[::]:33074` listener (bound only when
 the container has IPv6, or nginx fails to start).
 
+The native listener is post-quantum only by default: TLS 1.3 with
+`X25519MLKEM768`. Classic groups need the explicit operator opt-in
+`NETBIRD_TLS_ALLOW_CLASSIC=true`; never make classic the default again. Port 443
+is Cloudron's host nginx and can't be changed by the package. Rosenpass can't be
+enforced server-side; setup commands use `--enable-rosenpass`. See
+[post-quantum protection](docs/POST-QUANTUM.md).
+
 ### Monitoring recommendation
 
 When operators ask about uptime/alerting, or after an outage that went

@@ -39,7 +39,27 @@ assert_native_dashboard_redirect_contract() {
 	assert_contains start.sh '~^33074:(GET|HEAD)$ "https://${NETBIRD_DOMAIN}";' || return 1
 	# shellcheck disable=SC2016 # Assert generated nginx variables literally.
 	assert_contains start.sh 'return 308 $native_dashboard_redirect$request_uri;' || return 1
-	assert_contains start.sh "envsubst '\${NETBIRD_DOMAIN}' </app/data/config/nginx.conf.template >/app/data/config/nginx.conf" || return 1
+	assert_contains start.sh "envsubst '\${NETBIRD_DOMAIN} \${NETBIRD_TLS_PROTOCOLS} \${NETBIRD_TLS_GROUPS}' </app/data/config/nginx.conf.template >/app/data/config/nginx.conf" || return 1
+	return 0
+}
+
+assert_post_quantum_tls_contract() {
+	# Default: TLS 1.3 with hybrid ML-KEM only; classic groups are an opt-in.
+	assert_contains start.sh 'export NETBIRD_TLS_PROTOCOLS="TLSv1.3"' || return 1
+	assert_contains start.sh 'export NETBIRD_TLS_GROUPS="X25519MLKEM768"' || return 1
+	# shellcheck disable=SC2016 # Assert the opt-in condition literally.
+	assert_contains start.sh 'if [[ "${NETBIRD_TLS_ALLOW_CLASSIC:-false}" == true ]]; then' || return 1
+	assert_contains start.sh 'export NETBIRD_TLS_GROUPS="X25519MLKEM768:X25519:prime256v1:secp384r1"' || return 1
+	# shellcheck disable=SC2016 # Assert generated nginx placeholders literally.
+	assert_contains start.sh 'ssl_protocols ${NETBIRD_TLS_PROTOCOLS};' || return 1
+	# shellcheck disable=SC2016 # Assert generated nginx placeholders literally.
+	assert_contains start.sh 'ssl_ecdh_curve ${NETBIRD_TLS_GROUPS};' || return 1
+	assert_contains start.sh "NETBIRD_TLS_ALLOW_CLASSIC must be 'true' or 'false'" || return 1
+	if grep -Fq 'ssl_protocols TLSv1.2' "${ROOT_DIR}/start.sh"; then
+		fail "start.sh must not hard-code classic TLS protocols" || return 1
+	fi
+	assert_contains docs/POST-QUANTUM.md 'NETBIRD_TLS_ALLOW_CLASSIC=true' || return 1
+	assert_contains docs/POST-QUANTUM.md '--enable-rosenpass' || return 1
 	return 0
 }
 
@@ -105,7 +125,7 @@ assert_stun_and_trust_contract() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.4.4" and .upstreamVersion == "0.80.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.5.0" and .upstreamVersion == "0.80.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/docs/PUBLISHING.md" ]] || fail "Publishing guide is missing" || return 1
@@ -145,6 +165,7 @@ main() {
 	assert_contains start.sh "rewrite ^(.+)/\$ \$1 last;" || return 1
 	assert_contains start.sh 'listen 8080;' || return 1
 	assert_native_listener_contract || return 1
+	assert_post_quantum_tls_contract || return 1
 	assert_contains start.sh 'ssl_certificate /etc/certs/tls_cert.pem;' || return 1
 	# shellcheck disable=SC2016 # Assert the generated-script placeholders literally.
 	assert_contains start.sh 'exposedAddress: "https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"' || return 1

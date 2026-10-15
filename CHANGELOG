@@ -1,3 +1,7 @@
+[2.5.0]
+* The native client port now accepts only post-quantum TLS 1.3 (X25519MLKEM768), so recorded client traffic can't be decrypted later by a quantum computer. NetBird clients older than 0.61.0 can no longer connect unless you set the NETBIRD_TLS_ALLOW_CLASSIC=true app environment variable.
+* Setup instructions now include --enable-rosenpass for post-quantum device tunnels. See docs/POST-QUANTUM.md for migrating existing devices and auditing them.
+
 [2.4.4]
 * Monitoring guide: also check that the proxy backend port is closed over IPv6. The app image is unchanged.
 

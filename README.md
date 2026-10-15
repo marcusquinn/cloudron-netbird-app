@@ -105,8 +105,16 @@ curl -fsSL https://pkgs.netbird.io/install.sh | sh
 # Port 33073 is the default; replace it if Cloudron assigned another TCP port.
 sudo netbird up \
   --setup-key YOUR_SETUP_KEY \
-  --management-url https://netbird.your-cloudron.example:33073
+  --management-url https://netbird.your-cloudron.example:33073 \
+  --enable-rosenpass
 ```
+
+`--enable-rosenpass` adds post-quantum keys to device tunnels and only connects
+to other Rosenpass devices. Use it on every device. To add it to a network
+whose devices don't have it yet, follow the migration order in
+[post-quantum protection](docs/POST-QUANTUM.md#device-tunnels-rosenpass).
+The native client port accepts only post-quantum TLS by default, so clients
+must be NetBird 0.61.0 or later.
 
 The `/setup` page is only accessible when no users exist. After creating the first user, it redirects to the regular login page.
 
@@ -207,6 +215,13 @@ The manifest uses `/oauth2/.well-known/openid-configuration` as the health check
 endpoint, served through the internal nginx proxy on port 8080. The combined
 server also exposes a health endpoint on port 9000, which is not routed through
 nginx.
+
+### Post-quantum TLS
+
+The native client port accepts only TLS 1.3 with the hybrid `X25519MLKEM768`
+key exchange. Set `NETBIRD_TLS_ALLOW_CLASSIC=true` with `cloudron env set` to
+also allow classic key exchange for clients older than NetBird 0.61.0. See
+[post-quantum protection](docs/POST-QUANTUM.md) for port 443 and Rosenpass.
 
 ### External Monitoring
 

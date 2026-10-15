@@ -18,6 +18,8 @@ Do not create duplicate root copies of these guides.
   [ingress hardening](INGRESS-HARDENING.md): separately managed host resources.
 - [External monitoring](MONITORING.md): recommended updown.io checks for the app,
   native port, proxy ingress and backend exposure.
+- [Post-quantum protection](POST-QUANTUM.md): post-quantum-only native TLS, the
+  classic opt-in, port 443 limits and Rosenpass for device tunnels.
 - [Multiple instances](MULTI-INSTANCE.md): brand isolation and port/IP allocation.
 - [Publishing](PUBLISHING.md): immutable images, catalog and provenance.
 - [Qualification matrix](../test/QUALIFICATION.md): verified versus unexecuted
