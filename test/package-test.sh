@@ -44,6 +44,7 @@ assert_native_dashboard_redirect_contract() {
 }
 
 assert_post_quantum_tls_contract() {
+	assert_client_rosenpass_contract || return 1
 	# Default: TLS 1.3 with hybrid ML-KEM only; classic groups are an opt-in.
 	assert_contains start.sh 'export NETBIRD_TLS_PROTOCOLS="TLSv1.3"' || return 1
 	assert_contains start.sh 'export NETBIRD_TLS_GROUPS="X25519MLKEM768"' || return 1
@@ -199,7 +200,6 @@ main() {
 	assert_contains start.sh 'listen 8080;' || return 1
 	assert_native_listener_contract || return 1
 	assert_post_quantum_tls_contract || return 1
-	assert_client_rosenpass_contract || return 1
 	assert_contains start.sh 'ssl_certificate /etc/certs/tls_cert.pem;' || return 1
 	# shellcheck disable=SC2016 # Assert the generated-script placeholders literally.
 	assert_contains start.sh 'exposedAddress: "https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"' || return 1
