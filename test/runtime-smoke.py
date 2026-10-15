@@ -263,6 +263,22 @@ class SmokeCheck:
         _, protocol, status = response[1].rsplit("\n", 2)
         if protocol != "2" or status != "200":
             raise SmokeError("native client endpoint did not negotiate verified HTTP/2 TLS")
+        self.native_post_quantum_tls()
+
+    def native_post_quantum_tls(self):
+        # Default contract: hybrid ML-KEM over TLS 1.3 only; classic is opt-in.
+        address = "127.0.0.1:" + str(self.native_container_port)
+        for label, options, accepted in (
+            ("hybrid ML-KEM TLS 1.3", ("-tls1_3", "-groups", "X25519MLKEM768"), True),
+            ("classic X25519 TLS 1.3", ("-tls1_3", "-groups", "X25519"), False),
+            ("TLS 1.2", ("-tls1_2",), False),
+        ):
+            result = self.command(
+                "exec", self.app, "openssl", "s_client", "-connect", address,
+                "-servername", DOMAIN, "-brief", *options, check=False,
+            )
+            if (result[0] == 0) != accepted:
+                raise SmokeError("native listener " + ("refused " if accepted else "accepted ") + label)
 
     def native_dashboard_redirects(self):
         base = "https://" + DOMAIN + ":" + str(self.native_container_port)

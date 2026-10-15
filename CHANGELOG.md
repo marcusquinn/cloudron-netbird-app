@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-10-15
+
+### Changed (breaking for old clients)
+
+- The native client listener (`NETBIRD_PORT`) accepts only TLS 1.3 with the
+  hybrid post-quantum `X25519MLKEM768` key exchange. Recorded management,
+  signal and relay traffic can't be decrypted later by a quantum computer.
+  NetBird clients 0.61.0 and later (built with Go 1.24+) support it by default.
+  Older clients fail the handshake.
+- New opt-in `NETBIRD_TLS_ALLOW_CLASSIC=true` (Cloudron app environment) also
+  allows TLS 1.2 and the classic groups `X25519`, `prime256v1` and `secp384r1`.
+  Any value other than `true` or `false` stops startup with an error.
+
+### Added
+
+- [Post-quantum protection](docs/POST-QUANTUM.md): what each port protects, why
+  port 443 (Cloudron's host nginx with OpenSSL 3.0) stays classic, Rosenpass
+  strict and permissive modes, the migration order for existing networks,
+  device-management keys, and peer audits for client version and Rosenpass.
+- Setup commands in the README and post-install message use
+  `--enable-rosenpass`.
+- The runtime smoke test checks that hybrid ML-KEM is accepted and that classic
+  X25519 and TLS 1.2 are refused.
+
 ## [2.4.4] - 2026-10-14
 
 - [External monitoring](docs/MONITORING.md): add the IPv6 `<closed>` check for

@@ -48,6 +48,11 @@ validate_env() {
         fi
     fi
 
+    case "${NETBIRD_TLS_ALLOW_CLASSIC:-false}" in
+    true | false) ;;
+    *) errors+=("NETBIRD_TLS_ALLOW_CLASSIC must be 'true' or 'false' (got: '${NETBIRD_TLS_ALLOW_CLASSIC}').") ;;
+    esac
+
     for cert_file in /etc/certs/tls_cert.pem /etc/certs/tls_key.pem; do
         if [[ ! -s "${cert_file}" ]]; then
             errors+=("Required TLS addon file '${cert_file}' is missing or empty.")
@@ -347,6 +352,21 @@ else
     echo "==> Native transport: IPv4 only (container has no IPv6)"
 fi
 
+# Post-quantum key exchange on the native listener (docs/POST-QUANTUM.md).
+# Default: TLS 1.3 with hybrid X25519MLKEM768 only, so recorded management,
+# signal and relay traffic cannot be decrypted later with a quantum computer.
+# NetBird clients 0.61.0+ (Go 1.24+) offer it by default. Classic groups are
+# an explicit operator opt-in for older clients.
+if [[ "${NETBIRD_TLS_ALLOW_CLASSIC:-false}" == true ]]; then
+    export NETBIRD_TLS_PROTOCOLS="TLSv1.2 TLSv1.3"
+    export NETBIRD_TLS_GROUPS="X25519MLKEM768:X25519:prime256v1:secp384r1"
+    echo "==> Native transport TLS: classic key exchange allowed (NETBIRD_TLS_ALLOW_CLASSIC=true)"
+else
+    export NETBIRD_TLS_PROTOCOLS="TLSv1.3"
+    export NETBIRD_TLS_GROUPS="X25519MLKEM768"
+    echo "==> Native transport TLS: TLS 1.3 with post-quantum X25519MLKEM768 only"
+fi
+
 cat >/app/data/config/nginx.conf.template <<'NGINX_EOF'
 worker_processes auto;
 pid /run/nginx/nginx.pid;
@@ -396,7 +416,8 @@ http {
 
         ssl_certificate /etc/certs/tls_cert.pem;
         ssl_certificate_key /etc/certs/tls_key.pem;
-        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_protocols ${NETBIRD_TLS_PROTOCOLS};
+        ssl_ecdh_curve ${NETBIRD_TLS_GROUPS};
 
         # Security headers
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -453,7 +474,7 @@ http {
 }
 NGINX_EOF
 # shellcheck disable=SC2016 # Expand only this trusted configuration placeholder.
-envsubst '${NETBIRD_DOMAIN}' </app/data/config/nginx.conf.template >/app/data/config/nginx.conf
+envsubst '${NETBIRD_DOMAIN} ${NETBIRD_TLS_PROTOCOLS} ${NETBIRD_TLS_GROUPS}' </app/data/config/nginx.conf.template >/app/data/config/nginx.conf
 rm /app/data/config/nginx.conf.template
 
 # ============================================
