@@ -31,6 +31,7 @@ FORWARDED_HEADERS = ('Content-Type', 'User-Agent', 'X-Real-IP', 'X-Forwarded-For
                      'X-Forwarded-Proto', 'X-Forwarded-Host')
 SAFE_ID = re.compile(r'[A-Za-z0-9_-]{1,128}')
 OIDC_ENV = ('CLOUDRON_OIDC_ISSUER', 'CLOUDRON_OIDC_CLIENT_ID', 'CLOUDRON_OIDC_CLIENT_SECRET')
+EXPECTED_ERRORS = (OSError, KeyError, TypeError, AttributeError, ValueError)
 
 
 def log(message):
@@ -46,13 +47,18 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError('redirects are not permitted')
 
 
-class APIError(Exception):
+class APIError(ValueError):
     def __init__(self, step, status):
         super().__init__(step + ' returned HTTP ' + str(status))
         self.status = status
 
 
 OPENER = urllib.request.build_opener(NoRedirect())
+
+
+def describe(error):
+    """Our own messages are safe to log; anything else is reduced to its type."""
+    return str(error) if type(error) in (APIError, ValueError) else type(error).__name__
 
 
 def request(method, path, body=None, token=None, headers=None, timeout=30):
@@ -68,6 +74,14 @@ def request(method, path, body=None, token=None, headers=None, timeout=30):
             return response.status, response.headers, response.read(1024 * 1024)
     except urllib.error.HTTPError as error:
         return error.code, error.headers, error.read(1024 * 1024)
+
+
+def parse_object(raw):
+    try:
+        value = json.loads(raw)
+    except ValueError:
+        return None
+    return value if isinstance(value, dict) else None
 
 
 def api(step, method, path, token, payload=None):
@@ -144,19 +158,29 @@ def bootstrap(token, user_id, revoke):
     try:
         require_user_approval(token)
         register_provider(token, issuer, client_id, client_secret)
-    except (APIError, ValueError, OSError, KeyError, TypeError, AttributeError) as error:
-        detail = str(error) if isinstance(error, (APIError, ValueError)) else type(error).__name__
-        warn('automatic registration failed (' + detail + '). Owner setup succeeded and '
+    except EXPECTED_ERRORS as error:
+        warn('automatic registration failed (' + describe(error) + '). Owner setup succeeded and '
              'the embedded login works; add Cloudron manually as described in docs/SSO-SWITCH.md')
     finally:
         if revoke:
             try:
                 revoke_setup_token(token, user_id)
                 log('setup token deleted')
-            except (APIError, ValueError, OSError, TypeError, AttributeError) as error:
-                detail = str(error) if isinstance(error, (APIError, ValueError)) else type(error).__name__
-                warn('could not delete the setup token (' + detail + '). It expires within '
+            except EXPECTED_ERRORS as error:
+                warn('could not delete the setup token (' + describe(error) + '). It expires within '
                      'one day; delete it under Team > Users > owner > Access tokens')
+
+
+def finish_setup(result, caller_wants_token):
+    """Bootstrap with the setup token and return the browser-safe response."""
+    token = result.get('personal_access_token')
+    if not token:
+        warn('NetBird returned no setup token; add Cloudron manually as described in docs/SSO-SWITCH.md')
+        return result
+    bootstrap(token, result.get('user_id'), revoke=not caller_wants_token)
+    if not caller_wants_token:
+        result.pop('personal_access_token', None)
+    return result
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -174,6 +198,22 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def relay(self, response):
+        status, headers, body = response
+        self.reply(status, body, headers.get('Content-Type', 'application/json'))
+
+    def read_body(self):
+        """Return the request body, or None after replying with an error."""
+        try:
+            length = int(self.headers.get('Content-Length', ''))
+        except ValueError:
+            self.reply(411, b'{"message":"length required","code":411}')
+            return None
+        if not 0 <= length <= MAX_BODY:
+            self.reply(413, b'{"message":"request too large","code":413}')
+            return None
+        return self.rfile.read(length)
+
     def do_GET(self):
         self.reply(405, b'{"message":"method not allowed","code":405}')
 
@@ -183,54 +223,27 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if self.path != '/api/setup':
             self.reply(404, b'{"message":"not found","code":404}')
             return
-        try:
-            length = int(self.headers.get('Content-Length', ''))
-        except ValueError:
-            self.reply(411, b'{"message":"length required","code":411}')
+        raw = self.read_body()
+        if raw is None:
             return
-        if not 0 <= length <= MAX_BODY:
-            self.reply(413, b'{"message":"request too large","code":413}')
-            return
-        raw = self.rfile.read(length)
         forwarded = {name: self.headers[name] for name in FORWARDED_HEADERS if self.headers.get(name)}
-
-        try:
-            payload = json.loads(raw)
-        except ValueError:
-            payload = None
-        if not isinstance(payload, dict):
+        payload = parse_object(raw)
+        if payload is None:
             # Let NetBird produce its normal validation error.
-            status, headers, body = request('POST', '/api/setup', body=raw, headers=forwarded)
-            self.reply(status, body, headers.get('Content-Type', 'application/json'))
+            self.relay(request('POST', '/api/setup', body=raw, headers=forwarded))
             return
-
         # A caller that asked for its own setup token keeps it; otherwise the
         # helper requests a one-day token for its own use and deletes it.
         caller_wants_token = payload.get('create_pat') is True
         if not caller_wants_token:
             payload['create_pat'] = True
             payload['pat_expire_in'] = 1
-        status, headers, body = request('POST', '/api/setup',
-                                        body=json.dumps(payload).encode(), headers=forwarded)
-        if status != 200:
-            self.reply(status, body, headers.get('Content-Type', 'application/json'))
+        response = request('POST', '/api/setup', body=json.dumps(payload).encode(), headers=forwarded)
+        result = parse_object(response[2]) if response[0] == 200 else None
+        if result is None:
+            self.relay(response)
             return
-        try:
-            result = json.loads(body)
-        except ValueError:
-            result = None
-        if not isinstance(result, dict):
-            self.reply(status, body, headers.get('Content-Type', 'application/json'))
-            return
-
-        token = result.get('personal_access_token')
-        if token:
-            bootstrap(token, result.get('user_id'), revoke=not caller_wants_token)
-            if not caller_wants_token:
-                result.pop('personal_access_token', None)
-        else:
-            warn('NetBird returned no setup token; add Cloudron manually as described in docs/SSO-SWITCH.md')
-        self.reply(200, json.dumps(result).encode())
+        self.reply(200, json.dumps(finish_setup(result, caller_wants_token)).encode())
 
 
 def main():
