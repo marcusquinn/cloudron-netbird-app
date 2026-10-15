@@ -57,9 +57,13 @@ Preserve client/connector IDs across toggles and require new-user approval.
 Public ingress protection and its separate host-update lifecycle are documented
 in [ingress hardening](docs/INGRESS-HARDENING.md).
 
-Do not auto-register the connector at startup. NetBird v0.79.0 requires an
+Do not auto-register the connector at startup. NetBird requires an
 authenticated owner for `/api/identity-providers`, and startup must not persist
-an owner PAT, overwrite an existing connector, or log the client secret.
+an owner PAT, overwrite an existing connector, or log the client secret. The
+only automatic path is `scripts/setup-sso-bootstrap.py`: with a complete OIDC
+addon, nginx routes the owner's `POST /api/setup` to it; it requests a one-day
+setup PAT, requires user approval, adds `Cloudron` if absent, deletes the PAT
+and strips it from the response. Setup must succeed even if registration fails.
 Embedded and external identities remain distinct even when email matches; never
 silently link or promote an external identity.
 
@@ -93,7 +97,9 @@ The native listener is post-quantum only by default: TLS 1.3 with
 `X25519MLKEM768`. Classic groups need the explicit operator opt-in
 `NETBIRD_TLS_ALLOW_CLASSIC=true`; never make classic the default again. Port 443
 is Cloudron's host nginx and can't be changed by the package. Rosenpass can't be
-enforced server-side; setup commands use `--enable-rosenpass`. See
+enforced server-side; setup commands use `--enable-rosenpass
+--rosenpass-permissive`, and start.sh adds those flags (`NETBIRD_CLIENT_ROSENPASS`)
+to the dashboard's `"netbird up"` literal only, never to `GRPC_API_ORIGIN`. See
 [post-quantum protection](docs/POST-QUANTUM.md).
 
 ### Monitoring recommendation

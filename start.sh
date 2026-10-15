@@ -53,6 +53,11 @@ validate_env() {
     *) errors+=("NETBIRD_TLS_ALLOW_CLASSIC must be 'true' or 'false' (got: '${NETBIRD_TLS_ALLOW_CLASSIC}').") ;;
     esac
 
+    case "${NETBIRD_CLIENT_ROSENPASS:-permissive}" in
+    permissive | strict | off) ;;
+    *) errors+=("NETBIRD_CLIENT_ROSENPASS must be 'permissive', 'strict' or 'off' (got: '${NETBIRD_CLIENT_ROSENPASS}').") ;;
+    esac
+
     for cert_file in /etc/certs/tls_cert.pem /etc/certs/tls_key.pem; do
         if [[ ! -s "${cert_file}" ]]; then
             errors+=("Required TLS addon file '${cert_file}' is missing or empty.")
@@ -83,12 +88,17 @@ for var in "${oidc_vars[@]}"; do
     fi
 done
 
+SSO_SETUP_BOOTSTRAP=false
 if [[ ${oidc_vars_present} -eq 0 ]]; then
     echo "==> Cloudron SSO is not enabled; embedded authentication remains available"
 elif [[ ${oidc_vars_present} -eq ${#oidc_vars[@]} ]]; then
-    # Registration deliberately remains owner-initiated. Startup has no owner
-    # token and must never create connectors, merge identities, or log secrets.
-    echo "==> Cloudron SSO credentials are available for owner-managed onboarding"
+    # Startup never registers anything: it has no owner token and must never
+    # create connectors, merge identities, or log secrets. Instead the owner's
+    # own first POST /api/setup goes through setup-sso-bootstrap.py, which uses
+    # a one-day setup token once and deletes it. After setup this is inert.
+    SSO_SETUP_BOOTSTRAP=true
+    export NB_SETUP_PAT_ENABLED=true
+    echo "==> Cloudron SSO credentials are available; first owner setup adds Cloudron as a login option"
 else
     echo "WARNING: Cloudron supplied an incomplete optional OIDC environment; embedded authentication remains available" >&2
 fi
@@ -313,6 +323,37 @@ for dashboard_file in "${dashboard_files[@]}"; do
     mv "${dashboard_file}.tmp" "${dashboard_file}"
 done
 
+# PHASE 4c: Rosenpass in the dashboard's connect command
+# ============================================
+# Rosenpass is a device-local setting; NetBird has no server-side switch. The
+# dashboard's copyable command is built by getNetBirdUpCommand() from the
+# literal "netbird up" plus --management-url. Add the selected flags to that
+# literal only. grpcApiOrigin must stay a bare URL: the dashboard also shows it
+# as the server URL for mobile and desktop apps and in Docker/proxy commands.
+case "${NETBIRD_CLIENT_ROSENPASS:-permissive}" in
+permissive) client_rosenpass_flags=" --enable-rosenpass --rosenpass-permissive" ;;
+strict) client_rosenpass_flags=" --enable-rosenpass" ;;
+*) client_rosenpass_flags="" ;;
+esac
+if [[ -n "${client_rosenpass_flags}" ]]; then
+    # Minified form: let e="netbird up";return r&&(e+=" --management-url "+r),e
+    up_command_pattern='="netbird up";return ([A-Za-z_$][A-Za-z0-9_$]*)&&\('
+    up_command_files=()
+    while IFS= read -r -d '' dashboard_file; do
+        up_command_files+=("${dashboard_file}")
+    done < <(grep -RlZE --include='*.js' -- "${up_command_pattern}" /run/dashboard || true)
+    for dashboard_file in "${up_command_files[@]}"; do
+        sed -E -i "s/${up_command_pattern}/=\"netbird up${client_rosenpass_flags}\";return \\1\\&\\&(/" "${dashboard_file}"
+    done
+    if [[ ${#up_command_files[@]} -gt 0 ]]; then
+        echo "==> Dashboard connect command: netbird up${client_rosenpass_flags}"
+    else
+        echo "WARNING: Could not add Rosenpass flags to the dashboard connect command; add them manually (docs/POST-QUANTUM.md)" >&2
+    fi
+else
+    echo "==> Dashboard connect command: Rosenpass flags off (NETBIRD_CLIENT_ROSENPASS=off)"
+fi
+
 # PHASE 4d: nginx Configuration
 # ============================================
 # This nginx exposes two frontends for the server listening on port 80:
@@ -330,8 +371,21 @@ done
 # Optional unattended-install protection: initialize via an app terminal before
 # any internet caller can claim the first administrator account.
 : >/run/nginx/setup-guard.conf
+if [[ "${SSO_SETUP_BOOTSTRAP}" == true ]]; then
+    # Exact match wins over the regex locations, so repeat the local-only guard.
+    {
+        echo 'location = /api/setup {'
+        if [[ "${NETBIRD_SETUP_LOCAL_ONLY:-false}" == true ]]; then
+            echo '    allow 127.0.0.1;'
+            echo '    deny all;'
+        fi
+        echo '    proxy_pass http://127.0.0.1:8081;'
+        echo '    proxy_read_timeout 90s;'
+        echo '}'
+    } >>/run/nginx/setup-guard.conf
+fi
 if [[ "${NETBIRD_SETUP_LOCAL_ONLY:-false}" == true ]]; then
-    cat >/run/nginx/setup-guard.conf <<'SETUP_GUARD'
+    cat >>/run/nginx/setup-guard.conf <<'SETUP_GUARD'
 location ~ ^/api/setup(/|$) {
     allow 127.0.0.1;
     deny all;

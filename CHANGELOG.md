@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-10-15
+
+### Added
+
+- Automatic Cloudron SSO on new installs with the SSO addon
+  ([details](docs/SSO-SWITCH.md#automatic-registration-on-new-installs-with-sso)).
+  The owner's first `POST /api/setup` goes through a loopback helper that asks
+  NetBird for a one-day setup token (`NB_SETUP_PAT_ENABLED`), requires new-user
+  approval, adds a `Cloudron` OIDC provider unless one exists, deletes the token,
+  confirms it no longer works, and strips it from the browser response. Nothing
+  runs at startup; failures leave setup and the embedded login intact.
+- `NETBIRD_CLIENT_ROSENPASS` (`permissive` default, `strict`, `off`) sets the
+  Rosenpass flags in the dashboard's Add Peer `netbird up` command. Only the
+  command literal is changed; the management URL shown to apps is untouched.
+
+### Changed
+
+- Setup commands in the README, post-install message and post-quantum guide use
+  `--enable-rosenpass --rosenpass-permissive`, which keeps connections to
+  devices without Rosenpass.
+
 ## [2.5.0] - 2026-10-15
 
 ### Changed (breaking for old clients)

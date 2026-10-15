@@ -4,7 +4,7 @@
   "author": "Marcus Quinn <marcus@marcusquinn.com>",
   "description": "Self-hosted WireGuard mesh VPN with SSO, MFA, and granular access controls. Connect devices into a secure peer-to-peer overlay network.",
   "tagline": "Zero-config WireGuard mesh VPN for teams",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "upstreamVersion": "0.80.0",
   "healthCheckPath": "/oauth2/.well-known/openid-configuration",
   "httpPort": 8080,
@@ -58,7 +58,7 @@
     "networking",
     "security"
   ],
-  "postInstallMessage": "NetBird is running. Visit the app URL to access the dashboard.\n\nOn first run, create and test the embedded owner account before adding another login method.\n\nConnect clients with `netbird up --management-url https://${CLOUDRON_APP_DOMAIN}:${NETBIRD_PORT} --setup-key YOUR_SETUP_KEY --enable-rosenpass`. Keep TCP port ${NETBIRD_PORT} enabled and accessible for native client traffic.\n\nThe client port accepts only post-quantum TLS, so use NetBird clients 0.61.0 or later. `--enable-rosenpass` adds post-quantum keys to device tunnels and only connects to other Rosenpass devices, so use it on every device.\n\nNAT traversal uses Cloudron's platform STUN service unless you enabled the optional dedicated STUN port.\n\n<sso>Cloudron SSO credentials are available to configure manually in NetBird under Settings > Identity Providers. Keep embedded owner access as the recovery login.</sso>",
+  "postInstallMessage": "NetBird is running. Visit the app URL to access the dashboard.\n\nOn first run, create and test the embedded owner account before adding another login method.\n\nConnect clients with `netbird up --management-url https://${CLOUDRON_APP_DOMAIN}:${NETBIRD_PORT} --setup-key YOUR_SETUP_KEY --enable-rosenpass --rosenpass-permissive`, or copy the command from the dashboard's Add Peer dialog, which includes the same flags. Keep TCP port ${NETBIRD_PORT} enabled and accessible for native client traffic.\n\nThe client port accepts only post-quantum TLS, so use NetBird clients 0.61.0 or later. The Rosenpass flags add post-quantum keys to tunnels between devices that have it, and still connect to devices that don't. In the desktop app, turn on Enable Quantum-Resistance and Enable Permissive Mode under Settings > Security > Encryption.\n\nNAT traversal uses Cloudron's platform STUN service unless you enabled the optional dedicated STUN port.\n\n<sso>Creating the owner account at /setup also adds Cloudron as a login option. New Cloudron users wait for your approval under Team > Users. Keep the owner account as the recovery login.</sso>",
   "configurePath": "/peers",
   "changelog": "file://CHANGELOG",
   "iconUrl": "https://raw.githubusercontent.com/marcusquinn/cloudron-netbird-app/main/logo.png",
