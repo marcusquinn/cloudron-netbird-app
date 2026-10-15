@@ -99,8 +99,10 @@ The modes:
   without Rosenpass joins, so this package uses it by default.
 - **Off** (the client default): classic WireGuard only.
 
-Setup command for every new device. The dashboard's **Add Peer** dialog shows
-the same flags, so a copied command already includes them:
+The default setup command for a new device. With the default
+`NETBIRD_CLIENT_ROSENPASS=permissive`, the dashboard's **Add Peer** dialog
+shows the same flags; if you changed that setting, use the command the dialog
+shows instead:
 
 ```sh
 sudo netbird up \
