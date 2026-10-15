@@ -132,9 +132,10 @@ def revoke_setup_token(token, user_id):
         token_id = entry.get('id', '')
         if entry.get('name') == SETUP_TOKEN_NAME and SAFE_ID.fullmatch(token_id):
             api('token deletion', 'DELETE', '/api/users/' + user_id + '/tokens/' + token_id, token)
-    # A deleted token must no longer authenticate.
-    status, _, _ = request('GET', '/api/users/current', token=token)
-    if status != 401:
+    # A deleted token must no longer work on an endpoint it just used. NetBird
+    # 0.80 answers an unknown token with 404 rather than 401.
+    status, _, _ = request('GET', '/api/accounts', token=token)
+    if status not in (401, 403, 404):
         raise APIError('token revocation check', status)
 
 

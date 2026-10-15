@@ -231,7 +231,10 @@ class SmokeCheck:
         logs = self.command("logs", self.app, check=False)
         output = logs[1] + logs[2]
         if "automatic registration failed" not in output or "setup token deleted" not in output:
-            raise SmokeError("SSO setup helper did not report fallback and token deletion")
+            # The helper's own lines never contain secrets; other log lines can.
+            helper = [line for line in output.splitlines() if "Cloudron SSO bootstrap:" in line]
+            raise SmokeError("SSO setup helper did not report fallback and token deletion: " +
+                             (" | ".join(helper) or "no helper output"))
 
     def dashboard_runtime_config(self):
         placeholders = self.command("exec", self.app, "grep", "-RIl",
