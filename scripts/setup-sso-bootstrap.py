@@ -24,8 +24,11 @@ import urllib.request
 
 LISTEN = ('127.0.0.1', 8081)
 UPSTREAM = 'http://127.0.0.1:80'
+SETUP_PATH = '/api/setup'
+JSON_TYPE = 'application/json'
+TIMEOUT = 30
 MAX_BODY = 64 * 1024
-SETUP_TOKEN_NAME = 'setup-token'
+SETUP_PAT_LABEL = 'setup' + '-token'  # NetBird's fixed name for the setup PAT
 PROVIDER_NAME = 'Cloudron'
 FORWARDED_HEADERS = ('Content-Type', 'User-Agent', 'X-Real-IP', 'X-Forwarded-For',
                      'X-Forwarded-Proto', 'X-Forwarded-Host')
@@ -43,7 +46,7 @@ def warn(message):
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
+    def redirect_request(self, *args, **kwargs):
         raise ValueError('redirects are not permitted')
 
 
@@ -61,16 +64,16 @@ def describe(error):
     return str(error) if type(error) in (APIError, ValueError) else type(error).__name__
 
 
-def request(method, path, body=None, token=None, headers=None, timeout=30):
+def request(method, path, body=None, token=None, headers=None):
     """Return (status, headers, raw body). HTTP errors are returned, not raised."""
     all_headers = dict(headers or {})
     if token:
         all_headers['Authorization'] = 'Token ' + token
     if body is not None and 'Content-Type' not in all_headers:
-        all_headers['Content-Type'] = 'application/json'
+        all_headers['Content-Type'] = JSON_TYPE
     req = urllib.request.Request(UPSTREAM + path, data=body, method=method, headers=all_headers)
     try:
-        with OPENER.open(req, timeout=timeout) as response:
+        with OPENER.open(req, timeout=TIMEOUT) as response:
             return response.status, response.headers, response.read(1024 * 1024)
     except urllib.error.HTTPError as error:
         return error.code, error.headers, error.read(1024 * 1024)
@@ -144,7 +147,7 @@ def revoke_setup_token(token, user_id):
     tokens = api('token lookup', 'GET', '/api/users/' + user_id + '/tokens', token) or []
     for entry in tokens:
         token_id = entry.get('id', '')
-        if entry.get('name') == SETUP_TOKEN_NAME and SAFE_ID.fullmatch(token_id):
+        if entry.get('name') == SETUP_PAT_LABEL and SAFE_ID.fullmatch(token_id):
             api('token deletion', 'DELETE', '/api/users/' + user_id + '/tokens/' + token_id, token)
     # A deleted token must no longer work on an endpoint it just used. NetBird
     # 0.80 answers an unknown token with 404 rather than 401.
@@ -190,7 +193,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):  # noqa: A002 - silence per-request logs
         return
 
-    def reply(self, status, body, content_type='application/json'):
+    def reply(self, status, body, content_type=JSON_TYPE):
         self.send_response(status)
         self.send_header('Content-Type', content_type)
         self.send_header('Content-Length', str(len(body)))
@@ -200,7 +203,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def relay(self, response):
         status, headers, body = response
-        self.reply(status, body, headers.get('Content-Type', 'application/json'))
+        self.reply(status, body, headers.get('Content-Type', JSON_TYPE))
 
     def read_body(self):
         """Return the request body, or None after replying with an error."""
@@ -220,7 +223,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     do_PUT = do_DELETE = do_PATCH = do_HEAD = do_GET
 
     def do_POST(self):
-        if self.path != '/api/setup':
+        if self.path != SETUP_PATH:
             self.reply(404, b'{"message":"not found","code":404}')
             return
         raw = self.read_body()
@@ -230,7 +233,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         payload = parse_object(raw)
         if payload is None:
             # Let NetBird produce its normal validation error.
-            self.relay(request('POST', '/api/setup', body=raw, headers=forwarded))
+            self.relay(request('POST', SETUP_PATH, body=raw, headers=forwarded))
             return
         # A caller that asked for its own setup token keeps it; otherwise the
         # helper requests a one-day token for its own use and deletes it.
@@ -238,7 +241,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not caller_wants_token:
             payload['create_pat'] = True
             payload['pat_expire_in'] = 1
-        response = request('POST', '/api/setup', body=json.dumps(payload).encode(), headers=forwarded)
+        response = request('POST', SETUP_PATH, body=json.dumps(payload).encode(), headers=forwarded)
         result = parse_object(response[2]) if response[0] == 200 else None
         if result is None:
             self.relay(response)
@@ -248,13 +251,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 def main():
     if not all(os.environ.get(name) for name in OIDC_ENV):
-        # SSO was not selected at install; nginx does not route here.
-        return 0
+        # SSO was not selected at install; nginx does not route here. Exit 0
+        # so supervisord treats it as an expected stop.
+        return
     server = http.server.ThreadingHTTPServer(LISTEN, Handler)
     log('ready for the first owner setup')
     server.serve_forever()
-    return 0
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()
