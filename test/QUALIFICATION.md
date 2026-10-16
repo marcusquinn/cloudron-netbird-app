@@ -74,7 +74,7 @@ backup, WireGuard peers, public ACME TLS, or an external network path.
 | Local package and container contract | Reproducible baseline | Run the safe local entrypoints above against a locally built image | Commands exit zero; smoke reports labeled cleanup | Local Docker resources only; no host ports or remote targets |
 | Full backup and restore | Unexecuted; separate maintenance approval required | Verified backup, restore target, rollback owner, downtime window, and written restore runbook | Restored PostgreSQL and `/app/data` state supports login and peer operation | Restoration is destructive; retain verified backup and rollback evidence |
 | Certificate renewal | Unexecuted; separate maintenance approval required | Named staging/production certificate policy, DNS ownership, ACME rate-limit budget, rollback procedure | Renewed certificate is served by both web and native TLS paths | One bounded issuance attempt; no retry loop or unrelated DNS changes |
-| Host reboot, Docker/platform restart, or Cloudron upgrade | Unexecuted; separate maintenance approval required | Maintenance window, backup, rollback plan, exact platform versions, and operator consent | App returns healthy; setup state, secrets, native port, and peer connectivity persist | No shared restart or upgrade is performed by this harness |
+| Host reboot, Docker/platform restart, or Cloudron upgrade | Partially executed once (2.6.0, 2026-10-16; see execution records); repeat needs separate maintenance approval | Maintenance window, backup, rollback plan, exact platform versions, and operator consent | App returns healthy; setup state, secrets, native port, and peer connectivity persist | No shared restart or upgrade is performed by this harness |
 | IPv6 and direct-container isolation | Unexecuted; dedicated network fixture required | Isolated dual-stack test network and explicit firewall/container exposure map | Required public paths work; direct container paths remain inaccessible | Never probe arbitrary public or internal addresses |
 | Failure, relay, WebSocket, gRPC, and bounded load cases | Unexecuted; candidate publication and dedicated fixture required | Published candidate, isolated peers, fixed request/connection budget, timeout, and cleanup owner | Each route/protocol has an expected success or fail-closed result and resource bound | No default load target, billable provisioning, or unbounded traffic |
 
@@ -87,6 +87,43 @@ The unexecuted rows are plans, not authorization. Before running one, record:
 3. fixed timeout, connection/request or certificate budget, and success/failure
    observations; and
 4. scoped cleanup evidence proving that only owned test resources changed.
+
+## Execution records
+
+### Host reboot, Cloudron upgrade and Ubuntu release upgrade (2026-10-16)
+
+An operator-approved maintenance window on one production single-VPS Cloudron
+with the optional second-IP ingress helper. It ran as one sequence: Cloudron
+update, Ubuntu package update and reboot, Ubuntu release upgrade and reboot. A
+full Cloudron backup and a provider snapshot were taken first.
+
+`case=Host reboot, Docker/platform restart, or Cloudron upgrade;
+package=2.6.0 (ghcr.io/marcusquinn/cloudron-netbird-app@sha256:c53bc84cab0f9fcf2f8084cb22706278490bfe3caa3201ee17aa3fe8366d6878);
+platform=Cloudron 10.0.5 -> 10.1.5, then Ubuntu 24.04 -> 26.04.1 (kernel 7.0,
+Docker 29.6.2, OpenSSL 3.5.5), single VPS, Hetzner Cloud, ingress helper with
+HAProxy 2.8.16 -> 3.2.9 and nftables 1.1.6; command=Cloudron dashboard update,
+then the official Cloudron Ubuntu 26.04 guide (two host reboots);
+result=see below; cleanup=temporary operator API token removed, provider
+snapshots deleted after verification`
+
+Observed after each reboot and again about 12 hours later:
+
+- Cloudron recreated its database addons after its own update. The app went
+  through `pending_restart` and returned to `installed`, `running`, `healthy`.
+- The existing app container was restarted, not recreated. An existing peer
+  reconnected to Management and Signal through the native TLS port without
+  re-enrolment, and 2/2 relays were available, which needs the persisted relay
+  secret. The dashboard returned 200. No setup key or token decryption was
+  exercised, so `.encryption_key` persistence was not separately tested.
+- `netbird-ingress.py report` passed after both reboots. The labelled secondary
+  address returned at boot, and the ingress IP accepted TCP on 443.
+- `netbird-ingress.py check` and `nft --check -f rules.nft` both exited 0 under
+  the new HAProxy and nftables versions before the second reboot.
+
+Not covered by this record: peer-to-peer tunnel establishment (peers showed
+0/2 connected both before and after, so the result was unchanged rather than
+verified), an end-to-end proxied HTTP request through the ingress, a Docker-only
+restart, and rollback or restore. Treat these as still unexecuted.
 
 Candidate-specific ingress scripts are intentionally not referenced by the
 baseline harness until their source is published. Their absence leaves proxy

@@ -386,8 +386,10 @@ cloudron-netbird-app/
 4. **Single account mode**: All users join the same network. This suits most
    self-hosted deployments.
 5. **Qualification scope**: Native peer registration and public HTTPS-to-peer
-   proxying have passed on a live Cloudron installation. Full VPS reboot and
-   platform-upgrade qualification remain separate maintenance-window tests.
+   proxying have passed on a live Cloudron installation. One maintenance run
+   covered host reboots, a Cloudron upgrade and an Ubuntu 26.04 release upgrade.
+   Restore, Docker-only restart and post-reboot peer tunnels remain separate
+   maintenance-window tests.
 
 ## Upstream
 

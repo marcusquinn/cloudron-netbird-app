@@ -152,6 +152,27 @@ Live qualification covers native registration, public ACME issuance, remote peer
 traffic, header authentication, and forwarded-IP spoof rejection. Run
 `test/live-proxy-smoke.py` explicitly with a short-lived API session to repeat it;
 the test deletes its own services, setup key, peer and labelled Docker containers.
-App update/restart and backups are separate checks. Full VPS reboot, Docker
-restart and Cloudron upgrade tests need a maintenance window; do not infer them
-from passing app-level tests.
+App update/restart and backups are separate checks. One maintenance run covered
+host reboots, a Cloudron upgrade and an Ubuntu 24.04 -> 26.04 release upgrade
+with this helper installed (see the execution record in
+[test/QUALIFICATION.md](../test/QUALIFICATION.md)). Docker-only restart, restore
+and end-to-end proxied traffic after a reboot remain unexecuted. Do not infer
+them from passing app-level tests.
+
+### Host OS release upgrades
+
+`/etc/netbird-ingress` is host configuration, so an Ubuntu release upgrade
+replaces HAProxy and nftables underneath it (24.04 -> 26.04 moves HAProxy 2.8
+to 3.2). Before the post-upgrade reboot, validate both with the new binaries:
+
+```bash
+python3 /etc/netbird-ingress/netbird-ingress.py check
+nft --check -f /etc/netbird-ingress/rules.nft
+```
+
+Fix any failure before rebooting; otherwise the ingress service fails at boot.
+After the reboot, run `netbird-ingress.py report`. The helper adds the
+labelled secondary address itself, so it does not depend on the host's
+ifupdown or netplan files. If `networking.service` fails after the upgrade
+because a legacy cloud-init ifupdown file duplicates netplan's addresses, back
+up and remove only the duplicate file. Do not touch the helper's address.

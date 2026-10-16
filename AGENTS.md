@@ -96,7 +96,8 @@ the container has IPv6, or nginx fails to start).
 The native listener is post-quantum only by default: TLS 1.3 with
 `X25519MLKEM768`. Classic groups need the explicit operator opt-in
 `NETBIRD_TLS_ALLOW_CLASSIC=true`; never make classic the default again. Port 443
-is Cloudron's host nginx and can't be changed by the package. Rosenpass can't be
+is Cloudron's host nginx and can't be changed by the package; it negotiates
+`X25519MLKEM768` only on Ubuntu 26.04 hosts (OpenSSL 3.5). Rosenpass can't be
 enforced server-side; setup commands use `--enable-rosenpass
 --rosenpass-permissive`, and start.sh adds those flags (`NETBIRD_CLIENT_ROSENPASS`)
 to the dashboard's `"netbird up"` literal only, never to `GRPC_API_ORIGIN`. See
@@ -185,5 +186,7 @@ See README.md Testing Checklist for the full list.
 - Cloudron TURN uses an incompatible relay credential model; only its STUN
   service is advertised and NetBird's built-in relay is used
 - Live native registration, ACME/TLS, remote peer HTTP traffic, header auth and
-  forged-forwarding-header denial are verified. Full VPS reboot and platform
-  upgrade qualification still require a maintenance window.
+  forged-forwarding-header denial are verified. Host reboot, Cloudron upgrade
+  and Ubuntu 24.04 -> 26.04 ran once (test/QUALIFICATION.md execution record);
+  peer tunnels, proxied traffic after reboot, Docker-only restart and restore
+  are still unexecuted and need a maintenance window.
