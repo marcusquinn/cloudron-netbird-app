@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-10-16
+
+### Changed
+
+- Update the combined NetBird server and bundled optional reverse proxy from
+  v0.80.0 to v0.81.1, pinning both multi-architecture image digests.
+- Retain the independently pinned dashboard v2.94.0 and Cloudron base 6.0.0.
+  Dashboard features introduced in v2.95.0 are not included in this update;
+  proxy and SSO configuration remain operator-controlled.
+
 ## [2.6.0] - 2026-10-15
 
 ### Added

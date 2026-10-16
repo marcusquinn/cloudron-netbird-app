@@ -1,3 +1,7 @@
+[2.6.1]
+* Update the combined NetBird server and optional reverse proxy to v0.81.1 with immutable multi-architecture image digests.
+* Retain dashboard v2.94.0 and Cloudron base 6.0.0; no automatic proxy or SSO configuration changes.
+
 [2.6.0]
 * New installs with Cloudron SSO: creating the owner account at /setup also adds Cloudron as a login option. New Cloudron users need owner approval, and the owner login stays as the recovery login. If adding it fails, setup still works and the log explains the manual steps. Existing installs are unaffected.
 * The dashboard's Add Peer command now includes --enable-rosenpass --rosenpass-permissive, so new devices get post-quantum tunnels without losing connections to devices that don't have Rosenpass. Set NETBIRD_CLIENT_ROSENPASS to strict or off to change it.
