@@ -155,9 +155,10 @@ the test deletes its own services, setup key, peer and labelled Docker container
 App update/restart and backups are separate checks. One maintenance run covered
 host reboots, a Cloudron upgrade and an Ubuntu 24.04 -> 26.04 release upgrade
 with this helper installed (see the execution record in
-[test/QUALIFICATION.md](../test/QUALIFICATION.md)). Docker-only restart, restore
-and end-to-end proxied traffic after a reboot remain unexecuted. Do not infer
-them from passing app-level tests.
+[test/QUALIFICATION.md](../test/QUALIFICATION.md)). That run did not cover
+peer-to-peer tunnel establishment, Docker-only restart, restore, or end-to-end
+proxied traffic after a reboot; these remain unexecuted. Do not infer them from
+passing app-level tests or from the live qualification above.
 
 ### Host OS release upgrades
 
@@ -171,7 +172,8 @@ nft --check -f /etc/netbird-ingress/rules.nft
 ```
 
 Fix any failure before rebooting; otherwise the ingress service fails at boot.
-After the reboot, run `netbird-ingress.py report`. The helper adds the
+After the reboot, run
+`python3 /etc/netbird-ingress/netbird-ingress.py report`. The helper adds the
 labelled secondary address itself, so it does not depend on the host's
 ifupdown or netplan files. If `networking.service` fails after the upgrade
 because a legacy cloud-init ifupdown file duplicates netplan's addresses, back

@@ -388,8 +388,8 @@ cloudron-netbird-app/
 5. **Qualification scope**: Native peer registration and public HTTPS-to-peer
    proxying have passed on a live Cloudron installation. One maintenance run
    covered host reboots, a Cloudron upgrade and an Ubuntu 26.04 release upgrade.
-   Restore, Docker-only restart and post-reboot peer tunnels remain separate
-   maintenance-window tests.
+   Restore, Docker-only restart, post-reboot peer tunnels and end-to-end proxied
+   HTTP after a reboot remain separate maintenance-window tests.
 
 ## Upstream
 
