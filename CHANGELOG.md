@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- Port 443 post-quantum status measured: Cloudron hosts on Ubuntu 26.04
+  (OpenSSL 3.5) negotiate `X25519MLKEM768` by default, while 24.04 stays
+  classic ([details](docs/POST-QUANTUM.md#dashboard-api-and-login-on-port-443)).
+- Recorded the first host reboot, Cloudron upgrade and Ubuntu 24.04 -> 26.04
+  qualification run, and listed what it did not cover
+  ([record](test/QUALIFICATION.md#execution-records)).
+- Ingress helper: validate HAProxy and nftables after a host release upgrade,
+  before rebooting ([details](docs/REVERSE-PROXY.md#host-os-release-upgrades)).
+
 ## [2.6.0] - 2026-10-15
 
 ### Added

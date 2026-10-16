@@ -69,15 +69,27 @@ openssl s_client -connect netbird.example.com:33073 -groups X25519 -brief </dev/
 ## Dashboard, API and login on port 443
 
 Port 443 is terminated by Cloudron's own nginx on the host, not by this
-package. Its key exchange depends on the host's OpenSSL. Ubuntu 24.04 ships
-OpenSSL 3.0, which has no ML-KEM, so these connections use classic X25519.
+package. Its key exchange depends on the host's OpenSSL, because Cloudron's
+nginx config sets no `ssl_ecdh_curve` and so inherits OpenSSL's default groups.
+Measured on Cloudron 10.0.5 and 10.1.5:
 
-Exposure if this traffic is recorded and later decrypted: dashboard sessions,
-login tokens (short-lived), API calls, and the setup-key value when you create
-or copy a key in the dashboard. Device enrolment itself, network maps, and
-signalling all use the native port.
+| Host OS | OpenSSL | X25519MLKEM768 | SecP256r1MLKEM768 | X25519 / P-256 |
+|---|---|---|---|---|
+| Ubuntu 24.04 | 3.0 | refused | refused | accepted |
+| Ubuntu 26.04 | 3.5.5 (nginx 1.28.3) | accepted, negotiated by default | refused | accepted |
 
-To reduce the exposure until Cloudron supports ML-KEM:
+So upgrading the host to Ubuntu 26.04 with Cloudron's
+[upgrade guide](https://docs.cloudron.io/guides/upgrade-ubuntu-26) gives port 443
+hybrid post-quantum key exchange without any package change. Classic clients
+still connect. Check a host with the same `openssl s_client -groups` commands
+as above, using port 443 and your dashboard hostname.
+
+On a 24.04 host, exposure if this traffic is recorded and later decrypted:
+dashboard sessions, login tokens (short-lived), API calls, and the setup-key
+value when you create or copy a key in the dashboard. Device enrolment itself,
+network maps, and signalling all use the native port.
+
+To reduce the exposure on a host still running Ubuntu 24.04:
 
 - Create setup keys as one-off or short-expiry keys, so a key decrypted later
   is already used or expired.
