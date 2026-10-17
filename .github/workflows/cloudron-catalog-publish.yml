@@ -51,9 +51,9 @@ jobs:
 
       - name: Install pinned Cloudron CLI
         run: |
-          registry_integrity="$(npm view "cloudron@${CLOUDRON_CLI_VERSION}" dist.integrity)"
-          test "${registry_integrity}" = "${CLOUDRON_CLI_INTEGRITY}"
-          npm install --global --ignore-scripts "cloudron@${CLOUDRON_CLI_VERSION}"
+          preflight_integrity="$(npm view "cloudron@${CLOUDRON_CLI_VERSION}" dist.integrity)"
+          test "${preflight_integrity}" = "${CLOUDRON_CLI_INTEGRITY}"
+          npm install --ignore-scripts --global "cloudron@${CLOUDRON_CLI_VERSION}"
           test "$(cloudron --version)" = "${CLOUDRON_CLI_VERSION}"
 
       - name: Dry-run catalog entry with the real Cloudron CLI
