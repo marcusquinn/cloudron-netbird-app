@@ -1,0 +1,91 @@
+{
+  "schema": "aidevops.repo-metrics.v1",
+  "schema_version": 1,
+  "generated_at": "2026-10-18T15:55:12Z",
+  "tool": {
+    "name": "aidevops repo-metrics",
+    "version": "1.0.0"
+  },
+  "repo": {
+    "name": "cloudron-netbird-app",
+    "slug": "marcusquinn/cloudron-netbird-app"
+  },
+  "summary": {
+    "source_files": 50,
+    "code": 8097,
+    "comments": 281,
+    "blanks": 1173,
+    "languages": 6,
+    "dependencies": 0
+  },
+  "languages": [
+    {
+      "name": "Python",
+      "files": 13,
+      "code": 2488,
+      "comments": 69,
+      "blanks": 300,
+      "percentage": 30.73,
+      "color": "#3572A5"
+    },
+    {
+      "name": "Markdown",
+      "files": 24,
+      "code": 2426,
+      "comments": 0,
+      "blanks": 689,
+      "percentage": 29.96,
+      "color": "#083fa1"
+    },
+    {
+      "name": "JSON",
+      "files": 2,
+      "code": 1825,
+      "comments": 0,
+      "blanks": 0,
+      "percentage": 22.54,
+      "color": "#292929"
+    },
+    {
+      "name": "Shell",
+      "files": 5,
+      "code": 983,
+      "comments": 152,
+      "blanks": 130,
+      "percentage": 12.14,
+      "color": "#89e051"
+    },
+    {
+      "name": "YAML",
+      "files": 5,
+      "code": 349,
+      "comments": 52,
+      "blanks": 44,
+      "percentage": 4.31,
+      "color": "#cb171e"
+    },
+    {
+      "name": "Dockerfile",
+      "files": 1,
+      "code": 26,
+      "comments": 8,
+      "blanks": 10,
+      "percentage": 0.32,
+      "color": "#384d54"
+    }
+  ],
+  "dependencies": {
+    "direct": 0,
+    "runtime": 0,
+    "dev": 0,
+    "locked": 0,
+    "total": 0,
+    "ecosystems": [],
+    "manifests": []
+  },
+  "refresh": {
+    "default_policy": "weekly scheduled refresh plus manual runs; skip generated outputs younger than 24h in managed workflows",
+    "cost_profile": "fast local git/unignored-file scan; no network by default",
+    "top_languages": 6
+  }
+}
