@@ -1,3 +1,7 @@
+[2.6.2]
+* Update NetBird server and the optional reverse proxy from 0.81.2 to 0.81.3, including the upstream relay QUIC dependency update.
+* Dashboard v2.94.0 and Cloudron base 6.0.0 are unchanged. No configuration changes.
+
 [2.6.1]
 * Update NetBird server and the optional reverse proxy from 0.80.0 to 0.81.2. NetBird 0.81 adds certificate posture checks (peers must hold a device certificate from your own CA; needs clients 0.81.0 or newer, not available on iOS or Android).
 * The dashboard stays at v2.94.0, so new 0.81 options that need a newer dashboard are not shown yet. No configuration changes.
