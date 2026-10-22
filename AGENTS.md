@@ -21,7 +21,7 @@ scenarios or native VPN-provider support were verified.
 
 ## Architecture
 
-- **Cloudron base image**: `cloudron/base:6.0.0`
+- **Cloudron base image**: `cloudron/base:6.0.1`
 - **Combined server**: Single `netbird-server` binary (management + signal + relay + optional embedded STUN + embedded IdP)
 - **Internal nginx**: Port 8080 serves Cloudron-proxied web traffic. Port 33074
   terminates Cloudron-addon TLS for native clients. Both route to port 80.

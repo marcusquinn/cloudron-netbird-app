@@ -161,9 +161,9 @@ assert_stun_and_trust_contract() {
 # Every upstream and base image is pinned by tag and digest.
 assert_image_pins() {
 	assert_contains Dockerfile 'netbirdio/netbird-server:0.81.3@sha256:541ecef7e98a66b17411d44e9d4dcfdb65913415f39b3b944b8e7e748f997f1d AS server' || return 1
-	assert_contains Dockerfile 'netbirdio/dashboard:v2.94.0@sha256:70e0fc6dd3b7758148d182fb55ecd8d4f9ce01e9bba56c9389224e0b8354009d AS dashboard' || return 1
+	assert_contains Dockerfile 'netbirdio/dashboard:v2.95.0@sha256:3d6adfee19dd8d34d795af51daee69d27d2081d2076a5a304cfdd14acc67d6f4 AS dashboard' || return 1
 	assert_contains Dockerfile 'netbirdio/reverse-proxy:0.81.3@sha256:5da714cd47a66a7c74ddbacc54a6a90d35c1959b77d1744a149b082e69659b45 AS proxy' || return 1
-	assert_contains Dockerfile 'cloudron/base:6.0.0@sha256:9bed4c8fa880645f8e669041ee28febe941481d00e9445e3e5a5483cb541d09b' || return 1
+	assert_contains Dockerfile 'cloudron/base:6.0.1@sha256:7b1e729960c3ca312d26e886917ba89483241bba0219ff292858e10d9d5768ee' || return 1
 	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
 	assert_contains Dockerfile 'gettext-base' || return 1
 	return 0

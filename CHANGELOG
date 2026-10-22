@@ -1,6 +1,8 @@
 [2.6.2]
 * Update NetBird server and the optional reverse proxy from 0.81.2 to 0.81.3, including the upstream relay QUIC dependency update.
-* Dashboard v2.94.0 and Cloudron base 6.0.0 are unchanged. No configuration changes.
+* Update the dashboard from v2.94.0 to v2.95.0. It adds the certificate posture check editor for NetBird 0.81, per-target HTTP access controls for reverse-proxy services, duplicating policies, and peer search by MAC address. Search engines are now blocked by default via robots.txt.
+* Optional second-IP reverse-proxy ingress: the host helper now restores its firewall guard before readiness checks, so a failed check after a reboot keeps the backend port blocked instead of reachable. Copy the released scripts/netbird-ingress.py to /etc/netbird-ingress/ on hosts that use it; an app update alone does not change it.
+* Update the Cloudron base image from 6.0.0 to 6.0.1. No configuration changes.
 
 [2.6.1]
 * Update NetBird server and the optional reverse proxy from 0.80.0 to 0.81.2. NetBird 0.81 adds certificate posture checks (peers must hold a device certificate from your own CA; needs clients 0.81.0 or newer, not available on iOS or Android).
