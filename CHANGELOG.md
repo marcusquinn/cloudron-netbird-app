@@ -18,6 +18,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ingress helper: validate HAProxy and nftables after a host release upgrade,
   before rebooting ([details](docs/REVERSE-PROXY.md#host-os-release-upgrades)).
 
+## [2.6.2] - 2026-10-22
+
+### Changed
+
+- NetBird server and the bundled optional reverse proxy updated from v0.81.2
+  to v0.81.3, with both multi-architecture image digests pinned. Upstream
+  v0.81.3 updates quic-go to v0.64.0 for clients and the relay; its Signal
+  registration fix is client-side and requires updating clients separately.
+- Dashboard updated from v2.94.0 to v2.95.0 (digest pinned): certificate
+  posture check editor for NetBird 0.81, per-target HTTP access controls for
+  reverse-proxy services, policy duplication and peer search by MAC. The image
+  now ships a deny-all `robots.txt`. Its runtime `envsubst` variable list is
+  unchanged, so the package's allowlist is unchanged.
+- Cloudron base image updated from 6.0.0 to 6.0.1 (digest pinned), as now
+  required by the Cloudron package compatibility preflight. No configuration
+  changes or automatic proxy/SSO reconfiguration.
+
+### Fixed
+
+- Ingress helper (`scripts/netbird-ingress.py`, optional second-IP reverse
+  proxy): after first activation, `up` restores the owned nftables guard
+  before preflight and HAProxy checks, and repairing a failed unit also
+  restores it. A readiness failure after reboot now fails closed instead of
+  leaving the published backend port reachable (#167). The host helper is
+  installed separately: copy the released file to
+  `/etc/netbird-ingress/netbird-ingress.py`; unit files are unchanged.
+
 ## [2.6.1] - 2026-10-18
 
 ### Changed
