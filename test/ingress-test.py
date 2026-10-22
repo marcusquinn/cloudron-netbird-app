@@ -131,12 +131,31 @@ class IngressTest(unittest.TestCase):
             state = 'failed\n' if args[:2] == ('systemctl', 'is-active') else ''
             return subprocess.CompletedProcess(args, 0, stdout=state)
         with patch.object(M, 'run', side_effect=fake_run) as run, patch.object(M, 'up') as up, \
-             patch.object(M, 'check') as check:
+             patch.object(M, 'check') as check, patch.object(M, 'restore_guard') as guard:
             M.reconcile(self.config)
             up.assert_not_called()
             check.assert_not_called()
+            guard.assert_called_once_with(self.config)
             self.assertIn(('systemctl', 'start', '--no-block', 'netbird-ingress.service',
                            'netbird-tcp-bridge.service'), [call.args for call in run.call_args_list])
+
+    def test_failed_readiness_after_reboot_still_restores_guard(self):
+        # After reboot a readiness failure (for example an upgraded HAProxy
+        # rejecting the config) must not leave the published backend exposed.
+        def fake_run(*args, **kwargs):
+            if args[:3] == ('nft', 'list', 'table'):
+                return subprocess.CompletedProcess(args, 1, stdout='')
+            return subprocess.CompletedProcess(args, 0, stdout='{}')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'installed-rules.json').write_text('{}')
+            with patch.object(M, 'ROOT', root), \
+                 patch.object(M, 'preflight', side_effect=ValueError('not ready')), \
+                 patch.object(M, 'run', side_effect=fake_run) as run, \
+                 patch.object(M, 'rule_signature', return_value={}):
+                with self.assertRaisesRegex(ValueError, 'not ready'):
+                    M.up(self.config)
+            self.assertIn(('nft', '-f', '-'), [call.args for call in run.call_args_list])
 
     def test_reapply_after_reboot_keeps_reviewed_ports(self):
         # Docker already publishes the backend port; the table vanished at reboot.

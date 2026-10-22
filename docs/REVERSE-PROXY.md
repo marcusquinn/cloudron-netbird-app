@@ -131,9 +131,15 @@ an intentional service stop. A *failed* ingress or bridge unit is not a stop:
 the timer queues a restart. nftables state is not persisted across reboot, so
 the boot-time `up` re-applies the helper's reviewed ports even though Docker
 already publishes `PROXY_PORT`; only first activation insists both ports are
-unused. Docker can publish the backend port a few seconds before the guard
-returns at boot; the timer bounds any longer gap to about 90 seconds after boot.
-A missing INPUT allowance or NAT rule fails closed
+unused. After first activation `up` restores the guard *before* its readiness
+checks, so a failed preflight or HAProxy check (for example after an OS upgrade)
+leaves the backend port guarded and the unit failed, not exposed. The timer's
+repair of a failed unit restores the guard in-process before queueing the
+restart; if restoring fails, the check service fails. Docker can publish the
+backend port a few seconds before the guard returns at boot. When a timer run
+restores the guard, any longer gap ends about 90 seconds after boot; repeated
+restore failures (for example a broken `nft`) extend it, so monitor
+`netbird-ingress-check.service`. A missing INPUT allowance or NAT rule fails closed
 while the separate guard remains intact. No software can promise that isolation
 survives an administrator flushing the entire firewall; do not do so.
 

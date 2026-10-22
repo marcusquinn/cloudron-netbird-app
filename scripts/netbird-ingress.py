@@ -201,22 +201,38 @@ def previously_activated():
     return (ROOT / 'installed-rules.json').exists()
 
 
+def guard_present():
+    return run('nft', 'list', 'table', 'inet', TABLE, check=False).returncode == 0
+
+
+def restore_guard(c):
+    """Apply this helper's owned table; needs only nft and the stored config."""
+    exists = guard_present()
+    text = ('delete table inet ' + TABLE + '\n' if exists else '') + rules(c)
+    run('nft', '--check', '-f', '-', data=text)
+    # The batch replacement is atomic. Never flush Cloudron's/Docker's tables.
+    run('nft', '-f', '-', data=text)
+    (ROOT / 'installed-rules.json').write_text(json.dumps(rule_signature(), sort_keys=True))
+
+
 def up(c):
-    preflight(c)
-    exists = run('nft', 'list', 'table', 'inet', TABLE, check=False).returncode == 0
     # Reserve ports only on first activation. nftables state is not persisted,
     # so after a reboot the table is absent while Docker already publishes the
     # app's PROXY_PORT on the backend port (and the bridge may hold the
     # frontend). Refusing then would leave ingress down and the backend
     # unguarded; re-applying this helper's reviewed ports is the safe action.
-    if not exists and not previously_activated():
+    first = not guard_present() and not previously_activated()
+    if first:
+        # Verify the host and require unused ports before any mutation.
+        preflight(c)
         require_unused_ports(c)
-    text = ('delete table inet ' + TABLE + '\n' if exists else '') + rules(c)
-    run('nft', '--check', '-f', '-', data=text)
+    # Otherwise restore the guard before fallible readiness checks, so a
+    # failed preflight or HAProxy check at boot fails closed instead of
+    # leaving the published backend port reachable.
+    restore_guard(c)
+    if not first:
+        preflight(c)
     run('haproxy', '-c', '-f', str(ROOT / 'haproxy.cfg'))
-    # The batch replacement is atomic. Never flush Cloudron's/Docker's tables.
-    run('nft', '-f', '-', data=text)
-    (ROOT / 'installed-rules.json').write_text(json.dumps(rule_signature(), sort_keys=True))
     args = allowance(c)
     if not allowance_precedes_cloudron():
         while run('iptables', '-w', '5', '-C', 'INPUT', *args, check=False).returncode == 0:
@@ -269,9 +285,15 @@ def reconcile(c):
         units = ['netbird-ingress.service']
         if run('systemctl', 'is-enabled', '--quiet', 'netbird-tcp-bridge.service', check=False).returncode == 0:
             units.append('netbird-tcp-bridge.service')
-        run('systemctl', 'reset-failed', 'netbird-ingress.service', check=False)
-        run('systemctl', 'start', '--no-block', *units)
-        print('Queued restart of failed managed ingress', file=sys.stderr)
+        try:
+            # Fail closed first rather than relying on the queued start. An
+            # error still queues the restart, then fails the check service so
+            # the repair failure stays visible.
+            restore_guard(c)
+        finally:
+            run('systemctl', 'reset-failed', 'netbird-ingress.service', check=False)
+            run('systemctl', 'start', '--no-block', *units)
+            print('Queued restart of failed managed ingress', file=sys.stderr)
         return
     # Respect an intentional stop/rollback. Never reactivate a stopped ingress.
     if ingress != 'active':
