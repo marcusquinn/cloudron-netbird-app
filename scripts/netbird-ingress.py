@@ -285,12 +285,15 @@ def reconcile(c):
         units = ['netbird-ingress.service']
         if run('systemctl', 'is-enabled', '--quiet', 'netbird-tcp-bridge.service', check=False).returncode == 0:
             units.append('netbird-tcp-bridge.service')
-        run('systemctl', 'reset-failed', 'netbird-ingress.service', check=False)
-        run('systemctl', 'start', '--no-block', *units)
-        print('Queued restart of failed managed ingress', file=sys.stderr)
-        # Fail closed now rather than relying on the queued start. An error
-        # here fails the check service so the repair failure stays visible.
-        restore_guard(c)
+        try:
+            # Fail closed first rather than relying on the queued start. An
+            # error still queues the restart, then fails the check service so
+            # the repair failure stays visible.
+            restore_guard(c)
+        finally:
+            run('systemctl', 'reset-failed', 'netbird-ingress.service', check=False)
+            run('systemctl', 'start', '--no-block', *units)
+            print('Queued restart of failed managed ingress', file=sys.stderr)
         return
     # Respect an intentional stop/rollback. Never reactivate a stopped ingress.
     if ingress != 'active':
