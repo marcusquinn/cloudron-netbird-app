@@ -1,3 +1,7 @@
+[2.6.3]
+* Update NetBird server and the optional reverse proxy from 0.81.3 to 0.81.4, including the upstream fix to distrust compromised eMudhra CA keys.
+* Keep dashboard v2.95.0 and Cloudron base 6.0.1. No configuration changes. The upstream SSH privilege-dropping fix is client-side and requires updating clients separately.
+
 [2.6.2]
 * Update NetBird server and the optional reverse proxy from 0.81.2 to 0.81.3, including the upstream relay QUIC dependency update.
 * Update the dashboard from v2.94.0 to v2.95.0. It adds the certificate posture check editor for NetBird 0.81, per-target HTTP access controls for reverse-proxy services, duplicating policies, and peer search by MAC address. Search engines are now blocked by default via robots.txt.
