@@ -79,15 +79,31 @@ assert_native_listener_contract() {
 }
 
 assert_catalog_publisher_contract() {
-	if grep -Fq 'include-hidden-files: true' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml"; then
-		fail "Release workflow uploads hidden checkout credentials" || return 1
+	local workflow=".github/workflows/cloudron-catalog-publish.yml"
+	local reusable_ref=""
+	reusable_ref="$(sed -n 's/.*uses: marcusquinn\/aidevops\/\.github\/workflows\/cloudron-catalog-publish-reusable.yml@//p' "${ROOT_DIR}/${workflow}")"
+	[[ "$reusable_ref" =~ ^[a-f0-9]{40}$ ]] || fail "Catalog workflow must call an immutable reusable workflow" || return 1
+	assert_contains "$workflow" "aidevops_ref: ${reusable_ref}" || return 1
+	assert_contains "$workflow" 'package_checks: |' || return 1
+	assert_contains "$workflow" '        bash ./test/package-test.sh' || return 1
+	assert_contains "$workflow" '        bash ./test/publish-catalog-test.sh' || return 1
+	assert_contains "$workflow" 'image_repository: ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
+	assert_contains "$workflow" 'cli_version: 8.2.6' || return 1
+	assert_contains "$workflow" 'cli_integrity: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==' || return 1
+	assert_contains "$workflow" 'pull_request:' || return 1
+	assert_contains "$workflow" 'workflow_dispatch:' || return 1
+	assert_contains "$workflow" '      - main' || return 1
+	assert_contains "$workflow" 'attestations: write' || return 1
+	# shellcheck disable=SC2016 # Assert the secret mapping literally, not its value.
+	assert_contains "$workflow" 'CLOUDRON_RELEASE_PAT: "${{ secrets.CLOUDRON_RELEASE_PAT }}"' || return 1
+	[[ "$(grep -Fc 'secrets.CLOUDRON_RELEASE_PAT' "${ROOT_DIR}/${workflow}")" -eq 1 ]] || fail "Release PAT must be passed only to the managed caller" || return 1
+	if grep -Eq '^[[:space:]]*(steps|runs-on|run):' "${ROOT_DIR}/${workflow}"; then
+		fail "Catalog caller must not retain inline publication steps" || return 1
 	fi
-	[[ "$(grep -Fc 'secrets.CLOUDRON_RELEASE_PAT' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml")" -eq 1 ]] || fail "Release PAT must be exposed to exactly one publication step" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "git diff --exit-code \"\${before_sha}\" -- CloudronManifest.json CHANGELOG CHANGELOG.md" || return 1
 	if grep -Fq -- '--versions-file' "${ROOT_DIR}/scripts/publish-cloudron-catalog.sh"; then
 		fail "Publisher uses unsupported Cloudron CLI --versions-file option" || return 1
 	fi
- 	return 0
+	return 0
 }
 
 qualification_contract() {
@@ -212,7 +228,6 @@ main() {
 	assert_contains start.sh 'exposedAddress: "https://${NETBIRD_DOMAIN}:${NETBIRD_NATIVE_PORT}"' || return 1
 	assert_contains Dockerfile 'EXPOSE 8080 33074' || return 1
 	assert_contains start.sh 'openssl rand -base64 32' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'platforms: linux/amd64' || return 1
 	assert_contains Dockerfile 'COPY --from=server /go/bin/netbird-server /app/code/bin/netbird-server' || return 1
 	assert_contains Dockerfile 'COPY --from=dashboard /usr/share/nginx/html/ /app/code/dashboard/' || return 1
 	if grep -Eq '/releases/latest([/?#]|$)' "${ROOT_DIR}/Dockerfile"; then
@@ -221,44 +236,6 @@ main() {
 	assert_contains .github/workflows/cloudron-package-release.yml "- 'v*'" || return 1
 	assert_contains .github/workflows/cloudron-package-release.yml 'uses: marcusquinn/aidevops/.github/workflows/cloudron-package-release-reusable.yml@22a6b4b29087ce2fcf3857596a40ff7b2c436482' || return 1
 	assert_contains .github/workflows/cloudron-package-release.yml 'aidevops_ref: 22a6b4b29087ce2fcf3857596a40ff7b2c436482' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'CLOUDRON_CLI_INTEGRITY: sha512-LHd+4u6pJxDtHX1JuVuWqrUuTbkDu+iH4jjNWW6JgB4+iDLusp08rpt6gifTFPbQjbCZHhnD8LbAGzM1NzDCXw==' || return 1
-	assert_precedes .github/workflows/cloudron-catalog-publish.yml 'registry_integrity=' 'npm install --global --ignore-scripts' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'IMAGE_REPOSITORY: ghcr.io/marcusquinn/cloudron-netbird-app' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'pull_request:' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "github.event_name != 'pull_request'" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'Require trusted publication source' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'EXPECTED_REF: refs/heads/main' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'attestations: write' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'subject-path: CloudronVersions.json' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'gh attestation verify CloudronVersions.json' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "--bundle \"\${{ steps.attest-catalog.outputs.bundle-path }}\"" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "--signer-workflow \"\${GITHUB_REPOSITORY}/.github/workflows/cloudron-catalog-publish.yml\"" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml '--source-ref refs/heads/main' || return 1
-	[[ "$(grep -Fc 'subject-path: CloudronVersions.json' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml")" -eq 2 ]] || fail "Both catalog publication paths must attest CloudronVersions.json" || return 1
-	[[ "$(grep -Fc 'gh attestation verify CloudronVersions.json' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml")" -eq 2 ]] || fail "Both catalog publication paths must verify catalog provenance" || return 1
-	[[ "$(grep -Fc -- '--source-ref refs/heads/main' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml")" -eq 2 ]] || fail "Both catalog provenance checks must require main as the source ref" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'scripts/publish-cloudron-catalog.sh' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml ".versions[\$version].manifest.dockerImage" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "git push --atomic origin HEAD:main \"v\${RELEASE_VERSION}\"" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'Reconcile GitHub release' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "git show \"v\${RELEASE_VERSION}:CloudronVersions.json\"" || return 1
-	if grep -Fq 'git push origin HEAD:main' "${ROOT_DIR}/.github/workflows/cloudron-catalog-publish.yml"; then
-		fail "Release workflow publishes the catalog and tag non-atomically" || return 1
-	fi
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'persist-credentials: false' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "GH_TOKEN: \${{ secrets.CLOUDRON_RELEASE_PAT }}" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'CLOUDRON_RELEASE_PAT is not configured for this repository' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'gh auth setup-git' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "chore: publish Cloudron package \${RELEASE_VERSION} [skip ci]" || return 1
-	assert_precedes .github/workflows/cloudron-catalog-publish.yml 'git diff --exit-code' 'gh auth setup-git' || return 1
-	assert_precedes .github/workflows/cloudron-catalog-publish.yml 'gh auth setup-git' 'git push --atomic' || return 1
-	assert_precedes .github/workflows/cloudron-catalog-publish.yml 'Publish and verify catalog entry' 'Attest catalog provenance' || return 1
-	assert_precedes .github/workflows/cloudron-catalog-publish.yml 'Verify catalog provenance' 'Commit generated catalog' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'Verify the build source stayed immutable' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'Verify anonymous registry visibility' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml 'Verify existing immutable image is anonymously pullable' || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "docker buildx imagetools inspect \"\${IMMUTABLE_REF}\"" || return 1
-	assert_contains .github/workflows/cloudron-catalog-publish.yml "docker buildx imagetools inspect \"\${EXPECTED_IMAGE_REF}\"" || return 1
 	assert_catalog_publisher_contract || return 1
 	bash "${ROOT_DIR}/test/publish-catalog-test.sh" || return 1
 	bash -n "${ROOT_DIR}/start.sh"
