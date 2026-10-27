@@ -18,6 +18,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ingress helper: validate HAProxy and nftables after a host release upgrade,
   before rebooting ([details](docs/REVERSE-PROXY.md#host-os-release-upgrades)).
 
+## [2.6.4] - 2026-10-27
+
+### Changed
+
+- NetBird server and the bundled optional reverse proxy updated from v0.81.4
+  to v0.81.5, with both multi-architecture image digests pinned.
+- Dashboard v2.95.0 and Cloudron base 6.0.1 are unchanged. No configuration
+  changes or automatic proxy/SSO reconfiguration. Upstream v0.81.5 validates
+  and bounds SSH session requests/channels, bounds the SSH session request
+  queue, and prevents resizes from blocking the session loop. These are
+  client-side fixes; update clients separately to receive them.
+
 ## [2.6.3] - 2026-10-25
 
 ### Changed
