@@ -20,6 +20,14 @@ SPEC = importlib.util.spec_from_file_location('cloudron_sso', Path(__file__).wit
 SSO = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SSO)
 
+# Non-owner roles exported by pinned NetBird management/server/types/user.go
+# (v0.79.0 through v0.81.5). Updates resend the observed role unchanged. Owner
+# and service identities stay excluded; unknown roles refuse before mutation.
+MANAGED_ROLES = (
+    'user', 'admin', 'billing_admin', 'auditor', 'network_admin',
+    'agent_network_admin', 'usage_viewer',
+)
+
 
 class API(SSO.API):
     def __init__(self, base, token, scheme='Bearer'):
@@ -172,7 +180,7 @@ def inventory(api, identity):
             raise ValueError('User connector metadata differs from subject')
         if type(user.get('pending_approval')) is not bool or type(user.get('is_blocked')) is not bool:
             raise ValueError('User authorization state missing')
-        if not isinstance(user.get('auto_groups'), list) or user.get('role') not in ('user', 'admin', 'billing_admin', 'auditor', 'network_admin'):
+        if not isinstance(user.get('auto_groups'), list) or user.get('role') not in MANAGED_ROLES:
             raise ValueError('Unsupported user update shape')
         candidates.append((user, subject))
     return candidates
