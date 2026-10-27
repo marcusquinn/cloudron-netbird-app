@@ -14,6 +14,11 @@ schedule, supply credentials or move existing devices to SSO ownership.
   This is just-in-time approval, not pre-creation of every directory user.
 - Preserve NetBird roles and `auto_groups`. Cloudron groups govern entitlement;
   the tool does not create matching NetBird groups or grant administrative roles.
+- Supported connector-user roles are the pinned NetBird non-owner roles: `user`,
+  `admin`, `billing_admin`, `auditor`, `network_admin`, `agent_network_admin`
+  and `usage_viewer`. Block/unblock resends the observed role unchanged. An
+  owner, service user or unknown role under the managed connector stops the
+  whole run before any write. Recheck this list when NetBird adds roles.
 - Keep the embedded owner, its existing devices, other IdPs and service identities
   outside reconciliation. No peer ownership transfer or deletion is performed.
 - Bind the external subject to immutable Cloudron user ID before authorization
@@ -112,3 +117,6 @@ embedded-owner/peer ownership. Static review and mandatory release checks are
 separate from operational qualification. Live group-removal, disabled-user,
 peer-traffic revocation and outage scenarios were **not run** for this release.
 Qualify those before relying on this tool for unattended security enforcement.
+`agent_network_admin` and `usage_viewer` coverage was checked against pinned
+upstream source and offline inventory/update-shape checks only; no live account
+with either role has been reconciled or revoked.

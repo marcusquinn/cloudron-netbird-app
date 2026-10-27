@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Access reconciler: connector users with NetBird's `agent_network_admin` or
+  `usage_viewer` role are now reconciled with their role preserved, instead of
+  stopping the whole run. Owner, service and unknown roles still refuse before
+  any write ([supported roles](docs/ACCESS-SYNC.md#scope)).
+
 ### Documentation
 
 - Port 443 post-quantum status measured: Cloudron hosts on Ubuntu 26.04
