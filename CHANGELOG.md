@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Release credential: use one reusable `CLOUDRON_RELEASE_PAT` across the
+  owner's package repositories, kept once in the aidevops secret store and set
+  per repository from there, instead of a new token per repository
+  ([publishing](docs/PUBLISHING.md#release-credential)).
 - Port 443 post-quantum status measured: Cloudron hosts on Ubuntu 26.04
   (OpenSSL 3.5) negotiate `X25519MLKEM768` by default, while 24.04 stays
   classic ([details](docs/POST-QUANTUM.md#dashboard-api-and-login-on-port-443)).

@@ -49,18 +49,37 @@ future policy enforcement.
 ## Release credential
 
 The protected `main` branch requires the repository secret
-`CLOUDRON_RELEASE_PAT`. Use a separate fine-grained PAT for this repository,
-owned by a repository administrator and limited to this repository with only
-`Contents: Read and write`. Do not grant workflow permissions or reuse the
-credential in another repository. The workflow exposes it only to the final
-validated catalog commit and atomic tag push; GHCR, attestations, and GitHub
-release operations continue to use `GITHUB_TOKEN`. The generated catalog commit
-includes `[skip ci]` so its PAT-authenticated branch and tag push cannot launch
-duplicate publication workflows.
+`CLOUDRON_RELEASE_PAT`. Use one reusable fine-grained PAT for catalog
+publication across the owner's Cloudron package repositories. The owner must be
+a repository administrator. Set **Repository access → Only select
+repositories** to those package repositories and grant only `Contents: Read and
+write` (metadata read is automatic). Do not grant workflow or user permissions,
+and do not reuse it for other purposes such as issue sync (`SYNC_PAT`). The
+workflow exposes it only to the final validated catalog commit and atomic tag
+push; GHCR, attestations, and GitHub release operations continue to use
+`GITHUB_TOKEN`. The generated catalog commit includes `[skip ci]` so its
+PAT-authenticated branch and tag push cannot launch duplicate publication
+workflows.
+
+Personal GitHub accounts have no account-wide Actions secrets, so each
+repository holds its own copy of the same value. Keep the value once in the
+aidevops secret store (`aidevops secret set CLOUDRON_RELEASE_PAT`, typed in a
+terminal) and set repository secrets from there without displaying it:
+
+```bash
+aidevops secret CLOUDRON_RELEASE_PAT -- sh -c \
+  'printf %s "$CLOUDRON_RELEASE_PAT" | gh secret set CLOUDRON_RELEASE_PAT --repo OWNER/REPO'
+```
+
+To add a new package repository, edit the existing token's repository access
+(the value does not change) and set the secret in that repository. Do not
+create another token. Regenerating the token revokes every copy: after
+regeneration, update the secret store and re-set the secret in every repository
+on the token's access list.
 
 If the PAT is absent, expired, or revoked, publication fails before the push
-without changing the catalog or tag. Rotate the repository secret and rerun the
-workflow from `main`.
+without changing the catalog or tag. Set or refresh the repository secret as
+above and rerun the failed workflow run from `main`.
 
 Published entries are append-only. For a critical bad release, run
 `cloudron versions revoke`, bump the package version, rebuild, and add a new
