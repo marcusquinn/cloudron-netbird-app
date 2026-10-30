@@ -29,6 +29,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ingress helper: validate HAProxy and nftables after a host release upgrade,
   before rebooting ([details](docs/REVERSE-PROXY.md#host-os-release-upgrades)).
 
+## [2.7.0] - 2026-10-30
+
+### Changed
+
+- NetBird server and the bundled optional reverse proxy updated from v0.81.5
+  to v0.82.0, with both multi-architecture image digests pinned. Includes
+  reverse-proxy account validation, management log credential masking, query
+  improvements, and relay protocol negotiation.
+- Reverse-proxy access logs use a separate database connection pool by default,
+  retaining the main Cloudron PostgreSQL database. Upstream MySQL removal does
+  not affect this package. No configuration changes or automatic proxy/SSO
+  reconfiguration are introduced.
+- Dashboard v2.95.0 and Cloudron base 6.0.1 are unchanged. Upstream latency-aware
+  HA routing, `netbird status --table`, and SSH fixes require client updates
+  separately; they are not installed by this server package update.
+- Rosenpass is deprecated upstream but remains supported in v0.82.0. Existing
+  connection flags and post-quantum native TLS defaults are preserved; this
+  release does not remove or weaken either protection.
+
 ## [2.6.4] - 2026-10-27
 
 ### Changed

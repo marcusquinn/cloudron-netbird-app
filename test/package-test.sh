@@ -176,9 +176,9 @@ assert_stun_and_trust_contract() {
 
 # Every upstream and base image is pinned by tag and digest.
 assert_image_pins() {
-	assert_contains Dockerfile 'netbirdio/netbird-server:0.81.5@sha256:6799c37020ff70b9708d0e13bfe7b7a5004084caad86ba165ffe5ea1c84c0ea2 AS server' || return 1
+	assert_contains Dockerfile 'netbirdio/netbird-server:0.82.0@sha256:7b5b53b2dc8bc25639f791cf72d47cf86911894ff3f8a97cb79bab9be958109c AS server' || return 1
 	assert_contains Dockerfile 'netbirdio/dashboard:v2.95.0@sha256:3d6adfee19dd8d34d795af51daee69d27d2081d2076a5a304cfdd14acc67d6f4 AS dashboard' || return 1
-	assert_contains Dockerfile 'netbirdio/reverse-proxy:0.81.5@sha256:128f1abd1e80460bd362c73698d1a6c63cf1ed859c55e1de01beb7cb5796f2a4 AS proxy' || return 1
+	assert_contains Dockerfile 'netbirdio/reverse-proxy:0.82.0@sha256:cc0deaed250ca1332e28f40caca780055cdda7871750cb020478f6fe96e1f6d7 AS proxy' || return 1
 	assert_contains Dockerfile 'cloudron/base:6.0.1@sha256:7b1e729960c3ca312d26e886917ba89483241bba0219ff292858e10d9d5768ee' || return 1
 	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
 	assert_contains Dockerfile 'gettext-base' || return 1
@@ -186,7 +186,7 @@ assert_image_pins() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.6.4" and .upstreamVersion == "0.81.5" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.7.0" and .upstreamVersion == "0.82.0" and .minBoxVersion == "9.1.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and (has("packageUrl") | not) and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/docs/PUBLISHING.md" ]] || fail "Publishing guide is missing" || return 1
