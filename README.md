@@ -60,7 +60,7 @@ an app update does not enable background synchronization or migrate existing pee
 
 | Resource | Minimum |
 |----------|---------|
-| Cloudron | v9.1.0+ |
+| Cloudron | v10.0.0+ |
 | Memory | 512 MB (configurable in manifest) |
 | Ports | TCP 443 plus configurable TCP 33073; Cloudron STUN on UDP 3478 |
 

@@ -1,3 +1,8 @@
+[2.7.1]
+* Link the Community Apps Package button to this package's repository.
+* Requires Cloudron 10.0.0 or later; Cloudron 9 servers can no longer read this catalog.
+* No change to the app; NetBird stays at 0.82.0 with dashboard v2.95.0.
+
 [2.7.0]
 * Update NetBird server and the optional reverse proxy from 0.81.5 to 0.82.0 with pinned image digests. Includes reverse-proxy account validation, management log credential masking, query improvements, and relay protocol negotiation.
 * Reverse-proxy access logs now use a separate database connection pool, defaulting to the existing Cloudron PostgreSQL database. Upstream MySQL removal does not affect this PostgreSQL package; no configuration changes are needed.

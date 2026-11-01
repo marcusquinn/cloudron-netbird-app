@@ -29,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ingress helper: validate HAProxy and nftables after a host release upgrade,
   before rebooting ([details](docs/REVERSE-PROXY.md#host-os-release-upgrades)).
 
+## [2.7.1] - 2026-11-01
+
+### Changed
+
+- Set `packageUrl` so the Community Apps Package button opens this repository;
+  `packagerUrl` still links the maintainer (issue #217).
+- Require Cloudron 10.0.0 (`minBoxVersion`). Cloudron 9 rejects `packageUrl`
+  anywhere in `CloudronVersions.json`, so 9.x servers can no longer read this
+  catalog. NetBird stays at 0.82.0 with dashboard v2.95.0; no app change.
+
 ## [2.7.0] - 2026-10-30
 
 ### Changed
