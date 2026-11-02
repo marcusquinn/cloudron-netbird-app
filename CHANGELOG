@@ -1,3 +1,7 @@
+[2.7.2]
+* The Community Apps Package link now opens this repository. The listing builds that link from packagerUrl, so the 2.7.1 packageUrl change had no visible effect.
+* No change to the app; NetBird stays at 0.82.0 with dashboard v2.95.0.
+
 [2.7.1]
 * Link the Community Apps Package button to this package's repository.
 * Requires Cloudron 10.0.0 or later; Cloudron 9 servers can no longer read this catalog.
