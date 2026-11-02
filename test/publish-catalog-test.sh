@@ -32,7 +32,7 @@ make_fixture() {
 	mkdir -p "${fixture_dir}/bin"
 	cp "${ROOT_DIR}/scripts/publish-cloudron-catalog.sh" "${fixture_dir}/publish-cloudron-catalog.sh"
 	cat >"${fixture_dir}/CloudronManifest.json" <<JSON
-{"version":"2.0.5","upstreamVersion":"0.75.0","manifestVersion":2}
+{"version":"2.0.5","upstreamVersion":"0.75.0","manifestVersion":2,"packageUrl":"https://github.com/marcusquinn/cloudron-netbird-app"}
 JSON
 	cat >"${fixture_dir}/CloudronVersions.json" <<JSON
 {"stable":true,"versions":{"${initial_version}":{"manifest":{"version":"${initial_version}","dockerImage":"registry.example/netbird@sha256:old"},"publishState":"published"}}}
@@ -71,10 +71,11 @@ case "$subcommand" in
 		manifest_version="$(jq -r '.version' CloudronManifest.json)"
 		generated_key="${FAKE_GENERATED_KEY:-$manifest_version}"
 		generated_manifest_version="${FAKE_MANIFEST_VERSION:-$manifest_version}"
+		package_url="$(jq -r '.packageUrl' CloudronManifest.json)"
 		if [[ "$generated_manifest_version" == "__missing__" ]]; then
-			generated_manifest="$(jq -cn --arg image "$image" '{dockerImage:$image}')"
+			generated_manifest="$(jq -cn --arg image "$image" --arg package_url "$package_url" '{dockerImage:$image,packageUrl:$package_url}')"
 		else
-			generated_manifest="$(jq -cn --arg version "$generated_manifest_version" --arg image "$image" '{version:$version,dockerImage:$image}')"
+			generated_manifest="$(jq -cn --arg version "$generated_manifest_version" --arg image "$image" --arg package_url "$package_url" '{version:$version,dockerImage:$image,packageUrl:$package_url}')"
 		fi
 		jq \
 			--arg key "$generated_key" \
@@ -130,8 +131,10 @@ assert_successful_publish() {
 	)
 
 	jq -e --arg image "$image_ref" \
-		'.versions["2.0.5"].manifest.version == "2.0.5" and .versions["2.0.5"].manifest.dockerImage == $image and .versions["2.0.5"].publishState == "published"' \
+		'.versions["2.0.5"].manifest.version == "2.0.5" and .versions["2.0.5"].manifest.dockerImage == $image and .versions["2.0.5"].publishState == "published" and .versions["2.0.5"].manifest.packageUrl == "https://github.com/marcusquinn/cloudron-netbird-app"' \
 		"${fixture_dir}/CloudronVersions.json" >/dev/null || fail "Successful publish did not create the verified published entry" || return 1
+	jq -e '.versions["2.0.4"] == {manifest:{version:"2.0.4",dockerImage:"registry.example/netbird@sha256:old"},publishState:"published"}' \
+		"${fixture_dir}/CloudronVersions.json" >/dev/null || fail "Successful publish changed the historical entry" || return 1
 	return 0
 }
 
