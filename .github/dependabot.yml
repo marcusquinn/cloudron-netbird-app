@@ -19,6 +19,11 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
-    # aidevops pins move with aidevops_ref via `aidevops sync-workflows`.
+    # aidevops pins move with aidevops_ref via `aidevops sync-workflows`, which
+    # manages loc-badge and linked-issue-check callers only. The
+    # cloudron-catalog-publish and cloudron-package-release callers are NOT
+    # covered by it (check-workflows-helper.sh has no entry for them), so
+    # Dependabot cannot bump them either: update each `uses:` SHA and its
+    # `aidevops_ref` together by hand, from a reviewed aidevops release.
     ignore:
       - dependency-name: "marcusquinn/aidevops*"
