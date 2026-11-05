@@ -19,3 +19,6 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
+    # aidevops pins move with aidevops_ref via `aidevops sync-workflows`.
+    ignore:
+      - dependency-name: "marcusquinn/aidevops*"
