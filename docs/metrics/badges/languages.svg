@@ -5,20 +5,20 @@
   <rect class="track" x="20" y="10" width="480" height="14" rx="3"/>
   <rect x="20" y="10" width="143" height="14" fill="#083fa1"/>
   <rect x="163" y="10" width="141" height="14" fill="#3572A5"/>
-  <rect x="304" y="10" width="133" height="14" fill="#292929"/>
-  <rect x="437" y="10" width="54" height="14" fill="#89e051"/>
-  <rect x="491" y="10" width="5" height="14" fill="#cb171e"/>
+  <rect x="304" y="10" width="132" height="14" fill="#292929"/>
+  <rect x="436" y="10" width="54" height="14" fill="#89e051"/>
+  <rect x="490" y="10" width="6" height="14" fill="#cb171e"/>
   <rect x="496" y="10" width="4" height="14" fill="#384d54"/>
   <rect x="20" y="34" width="10" height="10" rx="2" fill="#083fa1"/>
-  <text x="34" y="44" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Markdown <tspan class="pct">29.9%</tspan></text>
+  <text x="34" y="44" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Markdown <tspan class="pct">29.8%</tspan></text>
   <rect x="270" y="34" width="10" height="10" rx="2" fill="#3572A5"/>
-  <text x="284" y="44" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Python <tspan class="pct">29.6%</tspan></text>
+  <text x="284" y="44" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Python <tspan class="pct">29.5%</tspan></text>
   <rect x="20" y="50" width="10" height="10" rx="2" fill="#292929"/>
   <text x="34" y="60" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">JSON <tspan class="pct">27.7%</tspan></text>
   <rect x="270" y="50" width="10" height="10" rx="2" fill="#89e051"/>
   <text x="284" y="60" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Shell <tspan class="pct">11.4%</tspan></text>
   <rect x="20" y="66" width="10" height="10" rx="2" fill="#cb171e"/>
-  <text x="34" y="76" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">YAML <tspan class="pct">1.1%</tspan></text>
+  <text x="34" y="76" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">YAML <tspan class="pct">1.3%</tspan></text>
   <rect x="270" y="66" width="10" height="10" rx="2" fill="#384d54"/>
   <text x="284" y="76" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Dockerfile <tspan class="pct">0.3%</tspan></text>
 </svg>
