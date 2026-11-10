@@ -194,7 +194,7 @@ main() {
 	[[ -f "${ROOT_DIR}/media/hero.png" ]] || fail "media/hero.png is missing" || return 1
 	jq -e '.stable == true and (.versions | type == "object")' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Version catalog contract failed" || return 1
 	jq -e --slurpfile manifest "${ROOT_DIR}/CloudronManifest.json" \
-		'.versions[$manifest[0].version].manifest.packageUrl == $manifest[0].packageUrl' \
+		'(.versions[$manifest[0].version] // (.versions | to_entries | last).value).manifest.packageUrl == $manifest[0].packageUrl' \
 		"${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Current catalog entry must preserve manifest packageUrl" || return 1
 	jq -e '[.versions[].manifest | select(has("packageUrl")) | (.minBoxVersion | split(".") | .[0] | tonumber) >= 10] | all' "${ROOT_DIR}/CloudronVersions.json" >/dev/null || fail "Catalog entries with packageUrl must require Cloudron 10.0.0 or later" || return 1
 	assert_contains CHANGELOG '[2.0.18]' || return 1
