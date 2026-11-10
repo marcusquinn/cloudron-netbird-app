@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to v0.82.1, with both multi-architecture image digests pinned. Includes the
   management fix enforcing the account ID on reverse-proxy updates and renewal
   of cached reverse-proxy ACME certificates.
-- Dashboard v2.95.0 and Cloudron base 6.0.1 are unchanged. Upstream client SSH
+- Dashboard v2.96.0 and Cloudron base 6.0.1 are unchanged. Upstream client SSH
   and firewall fixes require client updates separately.
 
 ## [2.7.2] - 2026-11-02
