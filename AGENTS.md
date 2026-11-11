@@ -187,6 +187,8 @@ See README.md Testing Checklist for the full list.
   service is advertised and NetBird's built-in relay is used
 - Live native registration, ACME/TLS, remote peer HTTP traffic, header auth and
   forged-forwarding-header denial are verified. Host reboot, Cloudron upgrade
-  and Ubuntu 24.04 -> 26.04 ran once (test/QUALIFICATION.md execution record);
-  peer tunnels, proxied traffic after reboot, Docker-only restart and restore
-  are still unexecuted and need a maintenance window.
+  and Ubuntu 24.04 -> 26.04 ran once; a 2.7.3 window covered an isolated
+  restore clone, Docker-only restart, reboot with peer tunnels and proxied
+  traffic, neighbour isolation, bounded load and process recovery
+  (test/QUALIFICATION.md execution records). In-place restore and observed
+  certificate renewal are still unexecuted and need a maintenance window.

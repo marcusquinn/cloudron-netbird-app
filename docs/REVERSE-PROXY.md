@@ -139,9 +139,23 @@ restart; if restoring fails, the check service fails. Docker can publish the
 backend port a few seconds before the guard returns at boot. When a timer run
 restores the guard, any longer gap ends about 90 seconds after boot; repeated
 restore failures (for example a broken `nft`) extend it, so monitor
-`netbird-ingress-check.service`. A missing INPUT allowance or NAT rule fails closed
+`netbird-ingress-check.service`. One measured reboot showed a gap of about 6
+seconds. A missing INPUT allowance or NAT rule fails closed
 while the separate guard remains intact. No software can promise that isolation
 survives an administrator flushing the entire firewall; do not do so.
+
+The host guard protects the backend port from outside the host, not from other
+containers on the Cloudron bridge. A same-host app container can connect to the
+proxy's container port directly, bypassing the SNI filter, denylist and rate
+limit. It cannot forge a client address: PROXY headers and forwarding headers
+from it are not trusted. NetBird sees it as the masqueraded bridge address, so
+never allowlist the Docker gateway or bridge subnet in a service's access
+restrictions. Doing so admits every container on the host. Rely on service
+authentication for anything a neighbour must not reach.
+
+If a service's target peer goes offline, requests wait rather than failing
+fast. In one test, nothing answered within a 15-second client timeout, and
+service resumed about 30 seconds after the peer returned.
 
 Stop with `systemctl stop netbird-tcp-bridge.service netbird-ingress.service`.
 This removes only the labelled secondary address and tagged INPUT allowance.
@@ -160,11 +174,13 @@ traffic, header authentication, and forwarded-IP spoof rejection. Run
 the test deletes its own services, setup key, peer and labelled Docker containers.
 App update/restart and backups are separate checks. One maintenance run covered
 host reboots, a Cloudron upgrade and an Ubuntu 24.04 -> 26.04 release upgrade
-with this helper installed (see the execution record in
-[test/QUALIFICATION.md](../test/QUALIFICATION.md)). That run did not cover
-peer-to-peer tunnel establishment, Docker-only restart, restore, or end-to-end
-proxied traffic after a reboot; these remain unexecuted. Do not infer them from
-passing app-level tests or from the live qualification above.
+with this helper installed. A second run (2.7.3) covered an isolated restore
+clone, an app update, a Docker-only restart, a reboot with end-to-end proxied
+traffic and peer-to-peer tunnels afterwards, neighbour isolation, bounded load
+and process-failure recovery. See the execution records in
+[test/QUALIFICATION.md](../test/QUALIFICATION.md). In-place restore, failed
+certificate-renewal recovery and observed renewal remain unexecuted. Do not
+infer them from passing app-level tests or from the live qualification above.
 
 ### Host OS release upgrades
 
