@@ -186,7 +186,7 @@ assert_image_pins() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.7.3" and .upstreamVersion == "0.82.1" and .minBoxVersion == "10.0.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn/cloudron-netbird-app" and .packageUrl == "https://github.com/marcusquinn/cloudron-netbird-app" and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.7.3" and .upstreamVersion == "0.82.1" and .minBoxVersion == "10.0.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and .packageUrl == "https://github.com/marcusquinn/cloudron-netbird-app" and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/docs/PUBLISHING.md" ]] || fail "Publishing guide is missing" || return 1
