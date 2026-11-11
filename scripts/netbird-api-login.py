@@ -43,9 +43,11 @@ def main():
     verifier, state = secrets.token_urlsafe(48), secrets.token_urlsafe(24)
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip('=')
     redirect = origin + '/nb-auth'
+    # Select the embedded local connector explicitly: with the Cloudron OIDC
+    # connector registered, Dex otherwise shows a connector chooser, not a form.
     query = urllib.parse.urlencode(dict(client_id='netbird-dashboard', redirect_uri=redirect,
         response_type='code', scope='openid profile email groups', state=state,
-        code_challenge=challenge, code_challenge_method='S256'))
+        code_challenge=challenge, code_challenge_method='S256', connector_id='local'))
     response = opener.open(origin + '/oauth2/auth?' + query, timeout=20)
     for _ in range(4):
         parsed = urllib.parse.urlsplit(response.url)

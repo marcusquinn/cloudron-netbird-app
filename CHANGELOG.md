@@ -13,8 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `usage_viewer` role are now reconciled with their role preserved, instead of
   stopping the whole run. Owner, service and unknown roles still refuse before
   any write ([supported roles](docs/ACCESS-SYNC.md#scope)).
+- `scripts/netbird-api-login.py` now selects the embedded local connector, so
+  owner API login works when the Cloudron OIDC connector is registered.
 
 ### Documentation
+
+- Production qualification (2.7.3): isolated restore clone, Docker-only restart,
+  reboot with peer tunnels and proxied traffic, IPv6 and same-host neighbour
+  isolation, bounded load, upstream peer loss and process-failure recovery were
+  executed and recorded. Certificate renewal is deferred to the CA's renewal
+  window ([execution record](test/QUALIFICATION.md#production-qualification-window-2026-11-11)).
+- Reverse proxy limitations now cover the measured boot gap, same-host
+  containers bypassing host ingress limits, and slow failure for offline
+  targets ([recovery and limitations](docs/REVERSE-PROXY.md#recovery-and-limitations)).
 
 - Release credential: use one reusable `CLOUDRON_RELEASE_PAT` across the
   owner's package repositories, kept once in the aidevops secret store and set
