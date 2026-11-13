@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update NetBird server and the optional reverse proxy from 0.82.1 to 0.83.0
+  and the dashboard from v2.96.0 to v2.97.0, with pinned image digests
+  (package 2.7.4). Management runs a database migration on first start.
+  Client profile-ownership changes need client updates separately.
+
 ### Fixed
 
 - Access reconciler: connector users with NetBird's `agent_network_admin` or

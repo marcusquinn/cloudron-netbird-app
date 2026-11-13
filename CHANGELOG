@@ -1,3 +1,7 @@
+[2.7.4]
+* Update NetBird server and the optional reverse proxy from 0.82.1 to 0.83.0 with pinned image digests, and the dashboard from v2.96.0 to v2.97.0. Includes group resource references scoped to the owning account, lower-write peer handling and a database migration that moves peer connection state into separate tables on first start.
+* Upstream profile-ownership changes apply to NetBird clients, not this server; update clients separately. The new MCP server stays off unless enabled by the operator.
+
 [2.7.3]
 * Update NetBird server and the optional reverse proxy from 0.82.0 to 0.82.1 with pinned image digests. Includes a management fix enforcing the account ID on reverse-proxy updates and renewal of cached reverse-proxy ACME certificates.
 * Keep dashboard v2.95.0 and Cloudron base 6.0.1. Upstream SSH and firewall fixes apply to clients and need client updates separately.
