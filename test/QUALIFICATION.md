@@ -76,7 +76,7 @@ backup, WireGuard peers, public ACME TLS, or an external network path.
 | Certificate renewal | Deferred: platform renews only inside the CA's ARI window (2026-11-11 record); separate maintenance approval required | Named staging/production certificate policy, DNS ownership, ACME rate-limit budget, rollback procedure | Renewed certificate is served by both web and native TLS paths | One bounded issuance attempt; no retry loop or unrelated DNS changes |
 | Host reboot, Docker/platform restart, or Cloudron upgrade | Executed: reboot and upgrades on 2.6.0 (2026-10-16); Docker-only restart and reboot on 2.7.3 (2026-11-11); repeat needs separate maintenance approval | Maintenance window, backup, rollback plan, exact platform versions, and operator consent | App returns healthy; setup state, secrets, native port, and peer connectivity persist | No shared restart or upgrade is performed by this harness |
 | IPv6 and direct-container isolation | Executed once on production with external dual-stack probes and a same-host neighbour container (2.7.3, 2026-11-11 record) | Isolated dual-stack test network and explicit firewall/container exposure map | Required public paths work; direct container paths remain inaccessible | Never probe arbitrary public or internal addresses |
-| MCP server OAuth sign-in from a real client | Partially executed: local container with `NB_MCP_ENABLED` off/on and a read-only `NB_MCP_TOOLS` list (2.7.5, 2026-11-14); browser OAuth sign-in on a public install not executed | Public install with MCP enabled, a disposable non-owner NetBird user and one MCP client; see [MCP server](../docs/MCP-SERVER.md#verify) | `401` challenge; root discovery returns JSON; consent and sign-in complete; a read-only connection refuses a write tool; `mcp.session.start` audit entry | Sign out with token revocation, delete the test user, unset `NB_MCP_ENABLED` if it was off before |
+| MCP server OAuth sign-in from a real client | Partially executed: local container with `NB_MCP_ENABLED` off/on and a read-only `NB_MCP_TOOLS` list, then the production install with discovery and an Auditor-token MCP client (2.7.5, 2026-11-14 record); browser OAuth sign-in not executed | Public install with MCP enabled, a disposable non-owner NetBird user and one MCP client; see [MCP server](../docs/MCP-SERVER.md#verify) | `401` challenge; root discovery returns JSON; consent and sign-in complete; a read-only connection refuses a write tool; `mcp.session.start` audit entry | Sign out with token revocation, delete the test user, unset `NB_MCP_ENABLED` if it was off before |
 | Failure, relay, WebSocket, gRPC, and bounded load cases | Partially executed (2.7.3, 2026-11-11 record); dashboard WebSocket path not separately exercised | Published candidate, isolated peers, fixed request/connection budget, timeout, and cleanup owner | Each route/protocol has an expected success or fail-closed result and resource bound | No default load target, billable provisioning, or unbounded traffic |
 
 ## Maintenance-only execution contract
@@ -233,6 +233,41 @@ rule sets matched the earlier capture.
 Not covered: in-place destructive restore, a Cloudron platform upgrade, failed
 renewal recovery, the dashboard WebSocket path, and a gapless boot-time
 exposure measurement.
+
+### MCP server on the production install (2026-11-14)
+
+`case=MCP server OAuth sign-in from a real client (partial); package=2.7.3 ->
+2.7.5 (ghcr.io/marcusquinn/cloudron-netbird-app@sha256:8d15b93c3113cd8fb06362f10a29c4d408e2636b701e20cb806b9c50e1264fac),
+NetBird 0.83.1; platform=same production single-VPS Cloudron; command=cloudron
+update --image, then cloudron env set NB_MCP_ENABLED=true with the read-only
+NB_MCP_TOOLS list from the guide; result=see below; cleanup=see below`
+
+- The update took Cloudron's pre-update backup and passed the health check. After
+  the environment change the log showed `MCP server: enabled at
+  https://<app>/api/mcp (NB_MCP_TOOLS allowlist set)`.
+- Over public HTTPS, an unauthenticated `POST /api/mcp` returned `401` with
+  `WWW-Authenticate: Bearer resource_metadata=".../api/mcp/.well-known/oauth-protected-resource"`.
+  That document and the three root discovery paths
+  (`/.well-known/oauth-protected-resource/api/mcp`,
+  `/.well-known/oauth-authorization-server/api/mcp/auth`,
+  `/.well-known/openid-configuration/api/mcp/auth`) returned `200`
+  `application/json`. Paths with other suffixes are not routed and get the
+  dashboard (`200` HTML).
+- A service user with the `Auditor` role and a 30-day token was created through
+  the API. Through a stdio bridge (`mcp-remote@0.16.6`, streamable HTTP,
+  `Authorization: Token`), `initialize` answered `netbird-management`,
+  `tools/list` returned exactly the 33 allowlisted tools with no `create_`,
+  `update_`, `delete_`, `approve_` or `reject_` tool, and `list_peers`
+  succeeded.
+
+Cleanup: an owner token created first was revoked once the Auditor token
+existed, and the temporary login sessions were removed from the secret store.
+The Auditor service user, its token and `NB_MCP_ENABLED` were kept on purpose
+for the operator's ongoing aidevops use.
+
+Not covered: browser OAuth consent and sign-in from a real client, a write tool
+refused on a read-only OAuth connection, and the `mcp.session.start` audit
+entry. Those remain open in the matrix row.
 
 Candidate-specific ingress scripts are intentionally not referenced by the
 baseline harness until their source is published. Their absence leaves proxy
