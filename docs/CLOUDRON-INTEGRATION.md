@@ -120,8 +120,11 @@ mode of this package. This container hosts public services such as the bundled
 reverse proxy, and its egress must never be trusted as VPN ingress. The routing
 peer would run a NetBird client with `net_admin`, masquerade peer traffic to the
 Cloudron host and expose only the protected FQDNs as NetBird network resources.
-NetBird access policies would then grant per-group access, which is finer than
-Cloudron's single VPN.
+NetBird access policies would decide which groups can reach the protected apps
+**as a set**. Policies match destination IPs, and every protected FQDN shares
+the host's IP and port 443, so a peer allowed one can request the others. This
+is not per-app isolation; each app's own authentication remains a separate
+boundary.
 
 ### Interim option: allowlisted external routing peer
 
