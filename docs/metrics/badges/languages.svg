@@ -4,19 +4,19 @@
   <rect class="bg" width="520" height="96"/>
   <rect class="track" x="20" y="10" width="480" height="14" rx="3"/>
   <rect x="20" y="10" width="147" height="14" fill="#083fa1"/>
-  <rect x="167" y="10" width="138" height="14" fill="#3572A5"/>
-  <rect x="305" y="10" width="133" height="14" fill="#292929"/>
-  <rect x="438" y="10" width="53" height="14" fill="#89e051"/>
+  <rect x="167" y="10" width="137" height="14" fill="#3572A5"/>
+  <rect x="304" y="10" width="133" height="14" fill="#292929"/>
+  <rect x="437" y="10" width="54" height="14" fill="#89e051"/>
   <rect x="491" y="10" width="6" height="14" fill="#cb171e"/>
   <rect x="497" y="10" width="3" height="14" fill="#384d54"/>
   <rect x="20" y="34" width="10" height="10" rx="2" fill="#083fa1"/>
-  <text x="34" y="44" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Markdown <tspan class="pct">30.6%</tspan></text>
+  <text x="34" y="44" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Markdown <tspan class="pct">30.7%</tspan></text>
   <rect x="270" y="34" width="10" height="10" rx="2" fill="#3572A5"/>
-  <text x="284" y="44" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Python <tspan class="pct">28.8%</tspan></text>
+  <text x="284" y="44" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Python <tspan class="pct">28.7%</tspan></text>
   <rect x="20" y="50" width="10" height="10" rx="2" fill="#292929"/>
-  <text x="34" y="60" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">JSON <tspan class="pct">27.9%</tspan></text>
+  <text x="34" y="60" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">JSON <tspan class="pct">27.8%</tspan></text>
   <rect x="270" y="50" width="10" height="10" rx="2" fill="#89e051"/>
-  <text x="284" y="60" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Shell <tspan class="pct">11.1%</tspan></text>
+  <text x="284" y="60" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">Shell <tspan class="pct">11.3%</tspan></text>
   <rect x="20" y="66" width="10" height="10" rx="2" fill="#cb171e"/>
   <text x="34" y="76" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" class="lbl">YAML <tspan class="pct">1.3%</tspan></text>
   <rect x="270" y="66" width="10" height="10" rx="2" fill="#384d54"/>
