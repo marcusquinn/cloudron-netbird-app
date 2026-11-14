@@ -86,21 +86,69 @@ change unrelated mesh policies as an undocumented shortcut.
 
 ## Native Cloudron VPN protection: upstream blocker
 
-In Cloudron 10.0.5, `src/network.js:setVpnAccessConfig` rejects any app whose
-manifest ID differs from `constants.OPENVPN_APP_APPSTORE_ID`. The diagnostic is
-`vpnAppId must be an OpenVPN app`. There is no inspected generic VPN-provider
-registration API or manifest capability that enables NetBird here.
+Inspected in Cloudron 10.0.5, 10.1.6 and `platform/box` `master` at `c36346e`
+(2026-11-13). `src/network.js:setVpnAccessConfig` rejects any app whose manifest
+ID differs from `constants.OPENVPN_APP_APPSTORE_ID`, with the diagnostic
+`vpnAppId must be an OpenVPN app`. The dashboard (`VpnAccess.vue`, `Access.vue`)
+filters on the same ID. There is no generic VPN-provider API or manifest
+capability; manifest capabilities are limited to `net_admin`, `mlock`, `ping` and
+`vaapi`.
 
-`src/reverseproxy.js:getVpnAccessIngressData` trusts the selected VPN container's
-IPv4/IPv6 addresses for apps marked `requiresVpn`. A NetBird management server
-alone is not a routing peer and does not originate users' mesh traffic from that
-container. Relabelling the package cannot satisfy this data-plane contract.
+The rest of the contract is provider-neutral:
 
-A supported integration needs upstream provider selection and validation plus a
-qualified routing-peer path, source identity, DNS, IPv4/IPv6 and custom/full tunnel
-routing behavior. Both VPN-app entitlement and target-app authentication/ACLs
-remain relevant. Test public denial, entitled peer access, removed user/group
-access, provider failure and isolation before enabling it.
+- `src/reverseproxy.js:getVpnAccessIngressData` emits nginx `allow` rules for the
+  selected VPN container's IPv4/IPv6 addresses (plus the protected app's own
+  container) on apps marked `requiresVpn`, then `deny all`.
+- The app bridge's `GET /vpn-access-config` returns protected FQDNs, their DNS
+  domains and the tunnel-routing mode, but only to the selected VPN container.
+- Uninstalling the selected app clears the policy.
+
+So the selection check is the only OpenVPN-specific part. A NetBird management
+server alone is still not a routing peer and does not originate users' mesh
+traffic from its container. Relabelling the package cannot satisfy the contract.
+
+### Proposed upstream change
+
+A small Cloudron patch would accept any app with the `net_admin` capability as
+the VPN app. The admin still selects it explicitly. It would also block only the
+selected VPN app, rather than every OpenVPN app, from requiring VPN access.
+Progress and the forum proposal are tracked in issue #149. This repository does
+not carry a copy of Cloudron's source.
+
+If that lands, the NetBird side needs a **separate routing-peer app**, not a
+mode of this package. This container hosts public services such as the bundled
+reverse proxy, and its egress must never be trusted as VPN ingress. The routing
+peer would run a NetBird client with `net_admin`, masquerade peer traffic to the
+Cloudron host and expose only the protected FQDNs as NetBird network resources.
+NetBird access policies would decide which groups can reach the protected apps
+**as a set**. Policies match destination IPs, and every protected FQDN shares
+the host's IP and port 443, so a peer allowed one can request the others. This
+is not per-app isolation; each app's own authentication remains a separate
+boundary.
+
+### Interim option: allowlisted external routing peer
+
+`master` also adds a system-wide VPN-protection allowlist of IPs/CIDRs (not in
+10.1.6). Once it ships, a NetBird routing peer **outside** the Cloudron host with
+a dedicated static egress address can reach protected apps without the upstream
+patch: allowlist that /32 (and its IPv6 /128), and route the Cloudron addresses
+through it. Constraints:
+
+- Everything that egresses from that address is trusted, so dedicate it to the
+  routing peer.
+- Cloudron rejects Docker-network entries (`172.18.0.0/16`,
+  `fd00:c107:d509::/64`), so a routing peer in a Cloudron app container cannot
+  use the allowlist.
+- Route both address families or remove the unrouted record; otherwise clients
+  bypass the peer and get the VPN-required page.
+
+### Verification before any support claim
+
+A supported integration needs a qualified routing-peer path, source identity,
+DNS, IPv4/IPv6 and custom/full tunnel routing behavior. Both VPN-app entitlement
+and target-app authentication/ACLs remain relevant. Test public denial, entitled
+peer access, removed user/group access, provider failure and isolation before
+enabling it.
 
 Never impersonate OpenVPN, edit live platform code/database, widen trusted source
 subnets or replace Cloudron-generated nginx rules. Keep this requirement open
@@ -111,6 +159,11 @@ until the platform supports it and the actual protected-app path passes tests.
 - Installed Cloudron: `src/apps.js` (`canAccess`, `getAccessInfo`),
   `src/routes/users.js`, `src/api-tokens.js`, `src/oidcserver.js`,
   `src/network.js`, `src/reverseproxy.js`.
+- Cloudron `platform/box` `v10.1.6` and `master` `c36346e`: `src/network.js`,
+  `src/apps.js` (`setVpnAccess`), `src/app-bridge.js` (`vpnAccessConfig`),
+  `src/reverseproxy.js`, `src/nginxconfig.ejs`, `src/docker.js` (capabilities),
+  `dashboard/src/components/network/VpnAccess.vue` and
+  `dashboard/src/components/app/Access.vue`; `@cloudron/manifest-format` 6.8.0.
 - NetBird tag `v0.79.0`: `idp/dex/provider.go`, `management/server/user.go`,
   `management/server/http/handlers/users/users_handler.go` and
   `shared/management/http/api/openapi.yml`.

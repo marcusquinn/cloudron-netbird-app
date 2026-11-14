@@ -14,7 +14,7 @@ entrypoints and update package checks and relative links when moving guides.
 Before auth, group or routing changes, read
 [Cloudron integration boundaries](docs/CLOUDRON-INTEGRATION.md): custom OIDC
 does not inherit app ACLs; username is not immutable identity; owner/setup-key
-peers need migration; Cloudron 10.0.5 VPN protection accepts only OpenVPN.
+peers need migration; Cloudron 10.1.6 VPN protection accepts only OpenVPN.
 The [access reconciler](docs/ACCESS-SYNC.md) is an opt-in operator tool, not an
 automatic app service. Preserve owner peers; do not claim unexecuted revocation
 scenarios or native VPN-provider support were verified.
