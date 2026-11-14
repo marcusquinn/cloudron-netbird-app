@@ -306,10 +306,27 @@ export NETBIRD_LICENSED="false"
 export NETBIRD_CLOUD="false"
 export NETBIRD_AGENT_NETWORK_ONLY="false"
 export NETBIRD_AGENT_NETWORK_ENABLED="false"
+# Analytics, marketing and banner settings are NetBird Cloud features. Substitute
+# them empty: a placeholder left in the bundle is a non-empty string, so the
+# dashboard would initialise Google Analytics, GTM and Hotjar with it and show
+# "$NETBIRD_ANNOUNCEMENT" as a permanent banner.
+export NETBIRD_HOTJAR_TRACK_ID=""
+export NETBIRD_GOOGLE_ANALYTICS_ID=""
+export NETBIRD_GOOGLE_TAG_MANAGER_ID=""
+export NETBIRD_HUBSPOT_PORTAL_ID=""
+export NETBIRD_HUBSPOT_SIGNUP_FORM_ID=""
+export NETBIRD_HUBSPOT_ONBOARDING_FORM_ID=""
+export NETBIRD_HUBSPOT_SURVEY_FORM_ID=""
+export NETBIRD_MATOMO_URL=""
+export NETBIRD_MATOMO_SITE_ID=""
+export NETBIRD_ANALYTICS_EXCLUDED_EMAILS=""
+export NETBIRD_ANNOUNCEMENT=""
 
-# Keep these placeholders literal for the envsubst allowlist.
+# Keep these placeholders literal for the envsubst allowlist. The list must
+# contain every variable in ENV_STR of the pinned dashboard image's
+# docker/init_react_envs.sh; recheck it on every dashboard bump.
 # shellcheck disable=SC2016
-DASHBOARD_ENV_VARS='${USE_AUTH0} ${AUTH_AUDIENCE} ${AUTH_AUTHORITY} ${AUTH_CLIENT_ID} ${AUTH_CLIENT_SECRET} ${AUTH_SUPPORTED_SCOPES} ${NETBIRD_MGMT_API_ENDPOINT} ${NETBIRD_MGMT_GRPC_API_ENDPOINT} ${AUTH_REDIRECT_URI} ${AUTH_SILENT_REDIRECT_URI} ${NETBIRD_TOKEN_SOURCE} ${NETBIRD_DRAG_QUERY_PARAMS} ${NETBIRD_AUTH_SERVICE_URL} ${NETBIRD_WASM_PATH} ${NETBIRD_LICENSED} ${NETBIRD_CLOUD} ${NETBIRD_AGENT_NETWORK_ONLY} ${NETBIRD_AGENT_NETWORK_ENABLED}'
+DASHBOARD_ENV_VARS='${USE_AUTH0} ${AUTH_AUDIENCE} ${AUTH_AUTHORITY} ${AUTH_CLIENT_ID} ${AUTH_CLIENT_SECRET} ${AUTH_SUPPORTED_SCOPES} ${NETBIRD_MGMT_API_ENDPOINT} ${NETBIRD_MGMT_GRPC_API_ENDPOINT} ${NETBIRD_HOTJAR_TRACK_ID} ${NETBIRD_GOOGLE_ANALYTICS_ID} ${NETBIRD_GOOGLE_TAG_MANAGER_ID} ${AUTH_REDIRECT_URI} ${AUTH_SILENT_REDIRECT_URI} ${NETBIRD_TOKEN_SOURCE} ${NETBIRD_DRAG_QUERY_PARAMS} ${NETBIRD_AUTH_SERVICE_URL} ${NETBIRD_WASM_PATH} ${NETBIRD_LICENSED} ${NETBIRD_CLOUD} ${NETBIRD_AGENT_NETWORK_ONLY} ${NETBIRD_AGENT_NETWORK_ENABLED} ${NETBIRD_HUBSPOT_PORTAL_ID} ${NETBIRD_HUBSPOT_SIGNUP_FORM_ID} ${NETBIRD_HUBSPOT_ONBOARDING_FORM_ID} ${NETBIRD_HUBSPOT_SURVEY_FORM_ID} ${NETBIRD_MATOMO_URL} ${NETBIRD_MATOMO_SITE_ID} ${NETBIRD_ANALYTICS_EXCLUDED_EMAILS} ${NETBIRD_ANNOUNCEMENT}'
 dashboard_files=()
 while IFS= read -r -d '' dashboard_file; do
     dashboard_files+=("${dashboard_file}")
@@ -322,6 +339,12 @@ for dashboard_file in "${dashboard_files[@]}"; do
     envsubst "${DASHBOARD_ENV_VARS}" <"${dashboard_file}" >"${dashboard_file}.tmp"
     mv "${dashboard_file}.tmp" "${dashboard_file}"
 done
+# A newer dashboard may add variables; report any the allowlist missed.
+# shellcheck disable=SC2016 # Match literal placeholders.
+leftover_placeholders="$(grep -RhoE -- '\$(USE_AUTH0|AUTH_[A-Z_]+|NETBIRD_[A-Z_]+)' "${dashboard_files[@]}" | sort -u | tr '\n' ' ' || true)"
+if [[ -n "${leftover_placeholders}" ]]; then
+    echo "WARNING: Dashboard placeholders left unsubstituted: ${leftover_placeholders}" >&2
+fi
 
 # PHASE 4c: Rosenpass in the dashboard's connect command
 # ============================================

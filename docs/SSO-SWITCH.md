@@ -22,7 +22,7 @@ creating the owner account at `/setup` also adds Cloudron as a login option:
    the response to the browser. Nothing is stored or logged.
 
 The owner login is unchanged and remains the recovery login. Cloudron users
-who sign in wait under **Team > Users** until you approve them and give them a
+who sign in wait on the **Users** page until you approve them and give them a
 role. Nothing happens at app startup, and installs without SSO, existing
 installs and updates are unaffected: `/setup` only works while no user exists.
 
@@ -99,7 +99,7 @@ The CLI is an operator tool, not a daemon or automatic startup action.
 
 After enabling, test in a private browser window, then retest embedded login.
 The first external login is a distinct identity even if its email matches the
-embedded owner. Approve the intended user under **Team > Users** while logged in
+embedded owner. Approve the intended user on the **Users** page while logged in
 as the embedded owner, and grant only the intended role. Do not implicitly merge
 identities or promote a new external login to owner.
 

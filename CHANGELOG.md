@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update NetBird server and the optional reverse proxy from 0.82.1 to 0.83.1
+  and the dashboard from v2.96.0 to v2.97.0, with pinned image digests
+  (package 2.7.4). Management runs a database migration on first start.
+  Client profile-ownership changes need client updates separately. 0.83.1
+  only changes a Windows client user lookup.
+- Dashboard v2.97.0 moves Users from Team to the top of the sidebar. The
+  post-install message, setup bootstrap log and guides now name the Users page.
+
 ### Fixed
+
+- Dashboard runtime configuration now substitutes every variable in the pinned
+  dashboard image's `init_react_envs.sh`. Previously the analytics, HubSpot,
+  Matomo and announcement placeholders stayed in the bundle as literal text. The
+  dashboard read them as set values, so it could show a permanent
+  `$NETBIRD_ANNOUNCEMENT` banner and start Google Analytics, Tag Manager and
+  Hotjar with placeholder IDs. They are now empty. Startup logs a warning if a
+  later dashboard adds a placeholder the package does not fill in.
 
 - Access reconciler: connector users with NetBird's `agent_network_admin` or
   `usage_viewer` role are now reconciled with their role preserved, instead of

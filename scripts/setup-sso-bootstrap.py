@@ -138,7 +138,7 @@ def register_provider(token, issuer, client_id, client_secret):
     if not (result or {}).get('id'):
         raise ValueError('provider registration was not confirmed')
     log('registered Cloudron as a login option. New Cloudron users wait for '
-        'approval under Team > Users; the embedded owner login stays available')
+        'approval on the Users page; the embedded owner login stays available')
 
 
 def revoke_setup_token(token, user_id):
@@ -173,7 +173,7 @@ def bootstrap(token, user_id, revoke):
                 log('setup token deleted')
             except EXPECTED_ERRORS as error:
                 warn('could not delete the setup token (' + describe(error) + '). It expires within '
-                     'one day; delete it under Team > Users > owner > Access tokens')
+                     'one day; delete it under Users > owner > Access Tokens')
 
 
 def finish_setup(result, caller_wants_token):

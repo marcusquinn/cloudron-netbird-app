@@ -176,9 +176,9 @@ assert_stun_and_trust_contract() {
 
 # Every upstream and base image is pinned by tag and digest.
 assert_image_pins() {
-	assert_contains Dockerfile 'netbirdio/netbird-server:0.82.1@sha256:7cf0268831221d2d4cc8ca89ca3d8d9419f890f0abb72c1fa9d00aae07e0b788 AS server' || return 1
-	assert_contains Dockerfile 'netbirdio/dashboard:v2.96.0@sha256:340b13c00b84349572a2acc5605e907cb09250a9e6461c757097eabdb8e02f2c AS dashboard' || return 1
-	assert_contains Dockerfile 'netbirdio/reverse-proxy:0.82.1@sha256:dc92ce5c361d9f7bffd484d9502077390020c2bb39ca1e27dd1834c80adb7ce0 AS proxy' || return 1
+	assert_contains Dockerfile 'netbirdio/netbird-server:0.83.1@sha256:f6acc1a6dcb48d10b867ec7e6916c62ef5c8dc2bb198aec9cc637b2dd26c06c9 AS server' || return 1
+	assert_contains Dockerfile 'netbirdio/dashboard:v2.97.0@sha256:203b2dc90dc20d3fd45729caac7c922deb399586a68202e0a35be099720bac7d AS dashboard' || return 1
+	assert_contains Dockerfile 'netbirdio/reverse-proxy:0.83.1@sha256:7c8e11d39dfd88bd9f5a9e281b802b7e5772dc11869f53be81685283800816c5 AS proxy' || return 1
 	assert_contains Dockerfile 'cloudron/base:6.0.1@sha256:7b1e729960c3ca312d26e886917ba89483241bba0219ff292858e10d9d5768ee' || return 1
 	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
 	assert_contains Dockerfile 'gettext-base' || return 1
@@ -186,7 +186,7 @@ assert_image_pins() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.7.3" and .upstreamVersion == "0.82.1" and .minBoxVersion == "10.0.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and .packageUrl == "https://github.com/marcusquinn/cloudron-netbird-app" and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.7.4" and .upstreamVersion == "0.83.1" and .minBoxVersion == "10.0.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and .packageUrl == "https://github.com/marcusquinn/cloudron-netbird-app" and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/docs/PUBLISHING.md" ]] || fail "Publishing guide is missing" || return 1
@@ -212,6 +212,12 @@ main() {
 	assert_contains start.sh 'cp -a /app/code/dashboard/. /run/dashboard/' || return 1
 	assert_contains start.sh 'envsubst "' || return 1
 	assert_contains start.sh 'grep -RIlZ -- "AUTH_SUPPORTED_SCOPES" /run/dashboard' || return 1
+	# Unsubstituted cloud analytics/banner placeholders are truthy in the dashboard.
+	# shellcheck disable=SC2016 # Assert the envsubst placeholders literally.
+	assert_contains start.sh '${NETBIRD_GOOGLE_ANALYTICS_ID} ${NETBIRD_GOOGLE_TAG_MANAGER_ID}' || return 1
+	# shellcheck disable=SC2016 # Assert the envsubst placeholders literally.
+	assert_contains start.sh '${NETBIRD_MATOMO_URL} ${NETBIRD_MATOMO_SITE_ID} ${NETBIRD_ANALYTICS_EXCLUDED_EMAILS} ${NETBIRD_ANNOUNCEMENT}' || return 1
+	assert_contains start.sh 'export NETBIRD_ANNOUNCEMENT=""' || return 1
 	# Keep the parent privileged for log/PID access; only its services drop privileges.
 	assert_contains start.sh 'exec /usr/bin/supervisord --configuration /app/code/supervisord.conf --nodaemon' || return 1
 	[[ "$(grep -Fc 'user=cloudron' "${ROOT_DIR}/supervisord.conf")" -eq 4 ]] || fail "All managed services must run as cloudron" || return 1
