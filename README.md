@@ -182,7 +182,7 @@ a token deleted straight after.
 
 - A Cloudron identity and an embedded identity are distinct even when their
   email addresses match. NetBird does not merge them or promote the external
-  identity to owner. Review the new user in **Team > Users** and grant only the
+  identity to owner. Review the new user on the **Users** page and grant only the
   intended role; new external users can require owner approval.
 - Keep **Continue with Email** tested. An unavailable Cloudron IdP must not
   remove embedded owner access or affect setup-key peer enrolment.
