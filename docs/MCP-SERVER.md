@@ -112,7 +112,7 @@ Without a credential, the endpoint must ask for OAuth:
 curl -si -X POST https://netbird.example.com/api/mcp \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | grep -i '^www-authenticate'
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | grep -iE '^(HTTP/|www-authenticate)'
 ```
 
 | Result | Meaning |
@@ -141,7 +141,10 @@ claude mcp login netbird
 ```
 
 To ask only for read access, so the consent page doesn't offer **Make changes**,
-use this entry in `.mcp.json`:
+use this entry in the project's `.mcp.json` instead of `claude mcp add`, then run
+`claude mcp login netbird`. A local entry created by `claude mcp add` takes
+precedence over `.mcp.json` and its fields are not merged. If you already added
+one, run `claude mcp logout netbird` and `claude mcp remove netbird` first.
 
 ```json
 {
