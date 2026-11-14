@@ -177,8 +177,9 @@ Client notes:
   and a session can be revoked.
 - A personal access token always has the full rights of its user, with no
   read-only option. A service user's token reads everything in the account
-  whatever its role; the role only limits changes. Users with the `User` or
-  `Usage Viewer` role can't create tokens and must use OAuth. Use a token only
+  whatever its role; the role only limits changes. Users with the `User`,
+  `Agent Network Admin` or `Usage Viewer` role can't create tokens and must use
+  OAuth. Use a token only
   for clients without browser sign-in or for unattended scripts. Keep it in a
   secret manager or environment variable (for example
   `"Authorization": "Token ${NETBIRD_TOKEN}"` in `.mcp.json`), and never commit
@@ -197,8 +198,9 @@ The package keeps NetBird's MCP sign-ins in memory. It does not configure Redis
 and stop the app from starting whenever Redis is unreachable.
 
 - **Every app restart signs every OAuth client out.** That includes Cloudron app
-  updates, restarts, configuration and environment changes, backup restores and
-  the restart after a certificate renewal. Users sign in again from their
+  updates, restarts, configuration and environment changes, backup restores, and
+  is expected for the restart after a certificate renewal (not yet observed;
+  see the [qualification matrix](../test/QUALIFICATION.md)). Users sign in again from their
   client. Their client registrations stay valid, and personal access tokens are
   not affected.
 - An access token lasts 1 hour and is refreshed without asking the user. A
@@ -242,10 +244,12 @@ no MCP entry.
 
 - **Sign-in callback rate limit is shared.** NetBird limits its OAuth callback to
   30 requests per minute for each client address. Requests reach NetBird through
-  Cloudron's proxy and the in-container nginx, and the package sets no
-  `trustedHTTPProxies`. Trusting forwarded client addresses would mean trusting
-  the Docker gateway, which other containers' traffic also appears from. All
-  users share one budget. A burst of
+  Cloudron's proxy and the in-container nginx. By design, the package sets no
+  `trustedHTTPProxies` (a different setting from the `trustedPeers` used by the
+  bundled reverse proxy), so NetBird doesn't read client addresses from
+  `X-Forwarded-For` for this limit. Trusting them would mean trusting the Docker
+  gateway, which other containers' traffic also appears from. Expect all users
+  to share one budget. A burst of
   sign-ins, or someone flooding the callback, can delay new OAuth sign-ins for
   up to a minute. Open sessions and personal access tokens keep working.
 - **API rate limiting** is off unless you set `NB_API_RATE_LIMITING_ENABLED=true`.
@@ -256,6 +260,8 @@ no MCP entry.
 - **Anonymous metrics:** when NetBird's anonymous usage metrics are on (the
   package doesn't turn them off), management also reports whether MCP is
   enabled and daily tool-call and user counts. It doesn't report user IDs.
+  Upstream's off switch, `server.disableAnonymousMetrics`, isn't
+  operator-settable here: `start.sh` regenerates `config.yaml` on every start.
 
 ## Troubleshooting
 
