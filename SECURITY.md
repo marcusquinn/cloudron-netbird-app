@@ -69,6 +69,12 @@ no-change path was observed; live revocation and outage scenarios were not run
 for 2.3.0. Qualify them before unattended enforcement. It does not migrate or
 revoke embedded-owner peers, and an app update does not start a sync service.
 
+NetBird's [MCP server](docs/MCP-SERVER.md) is off unless the operator sets
+`NB_MCP_ENABLED`. When on, every NetBird user can connect an AI client with their
+own role, and tool output, including new setup keys, goes to that client's model
+provider. Prefer a read-only `NB_MCP_TOOLS` allowlist. Removing Cloudron access
+does not end an open MCP session; block or remove the NetBird user.
+
 This package implements the following security measures:
 
 - **Branch protection**: PRs require at least 1 approving review before

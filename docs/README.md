@@ -20,6 +20,8 @@ Do not create duplicate root copies of these guides.
   native port, proxy ingress and backend exposure.
 - [Post-quantum protection](POST-QUANTUM.md): post-quantum-only native TLS, the
   classic opt-in, port 443 limits and Rosenpass for device tunnels.
+- [MCP server](MCP-SERVER.md): opt-in AI-agent administration, read-only tool
+  allowlist, client sign-in, revocation and Cloudron session limits.
 - [Multiple instances](MULTI-INSTANCE.md): brand isolation and port/IP allocation.
 - [Publishing](PUBLISHING.md): immutable images, catalog and provenance.
 - [Qualification matrix](../test/QUALIFICATION.md): verified versus unexecuted

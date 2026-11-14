@@ -242,6 +242,15 @@ key exchange. Set `NETBIRD_TLS_ALLOW_CLASSIC=true` with `cloudron env set` to
 also allow classic key exchange for clients older than NetBird 0.61.0. See
 [post-quantum protection](docs/POST-QUANTUM.md) for port 443 and Rosenpass.
 
+### MCP Server (AI agents)
+
+NetBird can let AI agents such as Claude Code or Codex manage the account
+through its MCP server at `https://<app domain>/api/mcp`. It is off by default.
+Turn it on with `cloudron env set --app APP_ID NB_MCP_ENABLED=true`, and
+preferably limit it to read-only tools with `NB_MCP_TOOLS`. Every NetBird user
+can then connect with their own role. See the [MCP server guide](docs/MCP-SERVER.md)
+for the read-only list, client setup, sessions and revocation.
+
 ### External Monitoring
 
 Cloudron's health check does not cover the native client port or the optional

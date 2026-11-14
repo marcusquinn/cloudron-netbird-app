@@ -84,6 +84,8 @@ t022,Add keyless provenance for Cloudron catalogs,,,,,,backlog
 
 - [ ] t022 Add keyless provenance for Cloudron catalogs ref:GH#74
 
+- [ ] t30 docs: NetBird MCP server setup and OAuth discovery routing #feat ref:GH#247
+
 ## In Progress
 
 <!--TOON:in_progress[0]{id,desc,owner,tags,est,risk,logged,started,status}:

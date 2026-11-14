@@ -1,3 +1,8 @@
+[2.7.5]
+* New guide for NetBird's optional MCP server, which lets AI agents such as Claude Code or Codex manage peers, groups, policies and DNS: how to turn it on, limit it to read-only tools, sign in safely, and revoke access (docs/MCP-SERVER.md).
+* Fix: with the MCP server on, the OAuth discovery documents that MCP clients load first now come from NetBird instead of the dashboard's HTML page, so clients can find the sign-in.
+* The app log now shows at startup whether the MCP server is on, and warns when NB_MCP_ENABLED isn't a true/false value. No other change; NetBird stays at 0.83.1 with dashboard v2.97.0.
+
 [2.7.4]
 * Update NetBird server and the optional reverse proxy from 0.82.1 to 0.83.1 with pinned image digests, and the dashboard from v2.96.0 to v2.97.0. Includes group resource references scoped to the owning account, lower-write peer handling and a database migration that moves peer connection state into separate tables on first start.
 * Upstream profile-ownership changes apply to NetBird clients, not this server; update clients separately. The new MCP server stays off unless enabled by the operator.
