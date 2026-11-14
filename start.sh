@@ -104,6 +104,22 @@ else
 fi
 unset oidc_vars oidc_vars_present var
 
+# Optional NetBird MCP server (docs/MCP-SERVER.md). netbird-server reads the
+# NB_MCP_* variables from the app environment itself; report the state so an
+# operator can confirm an opt-in took effect. NetBird parses the value with Go's
+# strconv.ParseBool and leaves the server off for anything else.
+case "${NB_MCP_ENABLED:-}" in
+1 | t | T | true | TRUE | True)
+    echo "==> MCP server: enabled at https://${CLOUDRON_APP_DOMAIN}/api/mcp${NB_MCP_TOOLS:+ (NB_MCP_TOOLS allowlist set)}"
+    ;;
+"" | 0 | f | F | false | FALSE | False)
+    echo "==> MCP server: off (opt in with NB_MCP_ENABLED=true, see docs/MCP-SERVER.md)"
+    ;;
+*)
+    echo "WARNING: NB_MCP_ENABLED is not a boolean; NetBird leaves the MCP server off" >&2
+    ;;
+esac
+
 # ============================================
 # PHASE 1: First-Run Detection
 # ============================================
@@ -533,6 +549,16 @@ http {
 
         # ---- HTTP: API + OAuth2 (embedded IdP) ----
         location ~ ^/(api|oauth2)/ {
+            proxy_pass http://netbird_server;
+            proxy_set_header Host $host;
+        }
+
+        # ---- MCP OAuth discovery (docs/MCP-SERVER.md) ----
+        # MCP clients fetch these root documents before the /api copies. The
+        # dashboard fallback would answer 200 with HTML, which stops some
+        # clients, so management answers them: JSON when NB_MCP_ENABLED is on,
+        # 404 otherwise.
+        location ~ ^/\.well-known/(oauth-protected-resource/api/mcp|oauth-authorization-server/api/mcp/auth|openid-configuration/api/mcp/auth)$ {
             proxy_pass http://netbird_server;
             proxy_set_header Host $host;
         }

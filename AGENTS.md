@@ -112,6 +112,14 @@ IP literals for TCP checks (one per address family), use an inverted `<closed>`
 check for the proxy backend port, and never put a real API key or a private
 server address in repository content.
 
+### MCP server
+
+NetBird's MCP server stays operator opt-in (`NB_MCP_ENABLED`); never enable it
+by default or add Redis (`NB_CACHE_REDIS_ADDRESS` makes startup depend on it).
+Follow the [MCP server guide](docs/MCP-SERVER.md): read-only `NB_MCP_TOOLS`
+first, OAuth over PATs, and no claim that a real-client OAuth sign-in was
+verified until the qualification row records it.
+
 ### Dashboard runtime config
 
 The exported dashboard embeds environment placeholders in `config.json` and generated assets. Copy the immutable export to `/run/dashboard` and apply the same allowlisted `envsubst` contract as the pinned upstream dashboard init script. Serving unprocessed `/app/code/dashboard` makes the instance-status request fail and incorrectly falls into OIDC login.
@@ -125,7 +133,8 @@ The dedicated TLS listener must match the [upstream routing documentation](https
 | `/signalexchange.SignalExchange/*` | `grpc_pass` | gRPC requires HTTP/2 cleartext (h2c) |
 | `/management.ManagementService/*` | `grpc_pass` | Same |
 | `/relay*`, `/ws-proxy/*` | `proxy_pass` + Upgrade | WebSocket long-lived connections |
-| `/api/*`, `/oauth2/*` | `proxy_pass` | REST API + embedded IdP |
+| `/api/*`, `/oauth2/*` | `proxy_pass` | REST API + embedded IdP (includes `/api/mcp`) |
+| Three root `/.well-known/*/api/mcp[/auth]` paths | `proxy_pass` | MCP OAuth discovery; the SPA fallback would answer `200` HTML |
 | `/*` | `try_files` | Dashboard SPA (includes `/setup` route) |
 
 Timeouts must be `1d` for gRPC and WebSocket. `grpc_socket_keepalive on` is required.

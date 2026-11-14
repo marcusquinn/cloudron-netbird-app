@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.5] - 2026-11-14
+
+### Added
+
+- [MCP server guide](docs/MCP-SERVER.md) for NetBird's optional MCP endpoint
+  (`/api/mcp`): opt-in with `NB_MCP_ENABLED`, a read-only `NB_MCP_TOOLS`
+  allowlist, client setup, identity and token choice, restart and session
+  behaviour, revocation, audit entries and Cloudron limits.
+- Startup logs whether the MCP server is on, and warns when `NB_MCP_ENABLED` is
+  not a boolean.
+
+### Fixed
+
+- The three root MCP OAuth discovery documents
+  (`/.well-known/oauth-protected-resource/api/mcp` and the two
+  `/.well-known/*/api/mcp/auth` paths) now reach management. The dashboard
+  fallback previously answered them with `200` and HTML. They return JSON when
+  MCP is on and `404` when it is off.
+
+## [2.7.4] - 2026-11-14
+
 ### Changed
 
 - Update NetBird server and the optional reverse proxy from 0.82.1 to 0.83.1

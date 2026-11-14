@@ -134,6 +134,9 @@ assert_setup_sso_bootstrap_contract() {
 	assert_contains start.sh 'export NB_SETUP_PAT_ENABLED=true' || return 1
 	[[ "$(grep -Fc 'NB_SETUP_PAT_ENABLED' "${ROOT_DIR}/start.sh")" -eq 1 ]] || fail "NB_SETUP_PAT_ENABLED must be set only in the complete-OIDC branch" || return 1
 	assert_contains start.sh "echo 'location = /api/setup {'" || return 1
+	# MCP root OAuth discovery must reach management, not the dashboard fallback.
+	assert_contains start.sh 'location ~ ^/\.well-known/(oauth-protected-resource/api/mcp|oauth-authorization-server/api/mcp/auth|openid-configuration/api/mcp/auth)$ {' || return 1
+	assert_contains docs/MCP-SERVER.md 'NB_MCP_ENABLED=true' || return 1
 	assert_contains start.sh "echo '    proxy_pass http://127.0.0.1:8081;'" || return 1
 	assert_contains supervisord.conf 'command=/app/code/setup-sso-bootstrap.py' || return 1
 	assert_contains Dockerfile 'COPY scripts/setup-sso-bootstrap.py /app/code/setup-sso-bootstrap.py' || return 1
@@ -186,7 +189,7 @@ assert_image_pins() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.7.4" and .upstreamVersion == "0.83.1" and .minBoxVersion == "10.0.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and .packageUrl == "https://github.com/marcusquinn/cloudron-netbird-app" and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.7.5" and .upstreamVersion == "0.83.1" and .minBoxVersion == "10.0.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and .packageUrl == "https://github.com/marcusquinn/cloudron-netbird-app" and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/docs/PUBLISHING.md" ]] || fail "Publishing guide is missing" || return 1
