@@ -177,11 +177,25 @@ assert_stun_and_trust_contract() {
 	return 0
 }
 
+# A NetBird release image tagged with the upstream version, pinned by digest.
+# The digest itself lives only in the Dockerfile: the signed standing release
+# policy proves it against the registry, so a routine upstream bump changes
+# this file by version substitution alone.
+assert_release_image() {
+	local image="$1"
+	local tag="$2"
+	local stage="$3"
+	grep -Eq "^FROM netbirdio/${image}:${tag//./\\.}@sha256:[0-9a-f]{64} AS ${stage}\$" "${ROOT_DIR}/Dockerfile" ||
+		fail "Dockerfile must pin netbirdio/${image}:${tag} by digest as stage ${stage}" || return 1
+	return 0
+}
+
 # Every upstream and base image is pinned by tag and digest.
 assert_image_pins() {
-	assert_contains Dockerfile 'netbirdio/netbird-server:0.83.1@sha256:f6acc1a6dcb48d10b867ec7e6916c62ef5c8dc2bb198aec9cc637b2dd26c06c9 AS server' || return 1
+	local upstream_version="0.83.1"
+	assert_release_image netbird-server "$upstream_version" server || return 1
 	assert_contains Dockerfile 'netbirdio/dashboard:v2.97.0@sha256:203b2dc90dc20d3fd45729caac7c922deb399586a68202e0a35be099720bac7d AS dashboard' || return 1
-	assert_contains Dockerfile 'netbirdio/reverse-proxy:0.83.1@sha256:7c8e11d39dfd88bd9f5a9e281b802b7e5772dc11869f53be81685283800816c5 AS proxy' || return 1
+	assert_release_image reverse-proxy "$upstream_version" proxy || return 1
 	assert_contains Dockerfile 'cloudron/base:6.0.1@sha256:7b1e729960c3ca312d26e886917ba89483241bba0219ff292858e10d9d5768ee' || return 1
 	assert_contains Dockerfile 'LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"' || return 1
 	assert_contains Dockerfile 'gettext-base' || return 1
