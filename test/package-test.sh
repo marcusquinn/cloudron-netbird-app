@@ -192,7 +192,7 @@ assert_release_image() {
 
 # Every upstream and base image is pinned by tag and digest.
 assert_image_pins() {
-	local upstream_version="0.83.1"
+	local upstream_version="0.83.2"
 	assert_release_image netbird-server "$upstream_version" server || return 1
 	assert_contains Dockerfile 'netbirdio/dashboard:v2.97.0@sha256:203b2dc90dc20d3fd45729caac7c922deb399586a68202e0a35be099720bac7d AS dashboard' || return 1
 	assert_release_image reverse-proxy "$upstream_version" proxy || return 1
@@ -203,7 +203,7 @@ assert_image_pins() {
 }
 
 main() {
-	jq -e '.manifestVersion == 2 and .version == "2.7.5" and .upstreamVersion == "0.83.1" and .minBoxVersion == "10.0.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and .packageUrl == "https://github.com/marcusquinn/cloudron-netbird-app" and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
+	jq -e '.manifestVersion == 2 and .version == "2.7.6" and .upstreamVersion == "0.83.2" and .minBoxVersion == "10.0.0" and .iconUrl != "" and .packagerName != "" and .packagerUrl == "https://github.com/marcusquinn" and .packageUrl == "https://github.com/marcusquinn/cloudron-netbird-app" and (.mediaLinks | length) > 0 and .changelog == "file://CHANGELOG"' \
 		"${ROOT_DIR}/CloudronManifest.json" >/dev/null || fail "Manifest version contract failed" || return 1
 	[[ -f "${ROOT_DIR}/CloudronVersions.json" ]] || fail "CloudronVersions.json is missing" || return 1
 	[[ -f "${ROOT_DIR}/docs/PUBLISHING.md" ]] || fail "Publishing guide is missing" || return 1
