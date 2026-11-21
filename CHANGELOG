@@ -1,3 +1,6 @@
+[2.7.6]
+* Update NetBird server and the optional reverse proxy from 0.83.1 to 0.83.2 with pinned image digests. Dashboard stays at v2.97.0 and Cloudron base at 6.0.1.
+
 [2.7.5]
 * New guide for NetBird's optional MCP server, which lets AI agents such as Claude Code or Codex manage peers, groups, policies and DNS: how to turn it on, limit it to read-only tools, sign in safely, and revoke access (docs/MCP-SERVER.md).
 * Fix: with the MCP server on, the OAuth discovery documents that MCP clients load first now come from NetBird instead of the dashboard's HTML page, so clients can find the sign-in.
