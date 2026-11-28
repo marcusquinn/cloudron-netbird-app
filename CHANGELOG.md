@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.7] - 2026-11-28
+
+### Changed
+
+- Update NetBird server and the optional reverse proxy from 0.83.2 to 0.84.0
+  with pinned image digests (package 2.7.7). Dashboard stays at v2.97.0 and
+  Cloudron base at 6.0.1.
+
 ## [2.7.6] - 2026-11-21
 
 ### Changed
