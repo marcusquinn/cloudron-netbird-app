@@ -1,6 +1,6 @@
-FROM netbirdio/netbird-server:0.83.2@sha256:47e43b1b9e6343eb99d99a612513579111439dd016805912b0fae95ce802b908 AS server
+FROM netbirdio/netbird-server:0.84.0@sha256:e439e43e8db328656baeafe124939cfdac3a71cc38fcad9b44deefe0e84a5ede AS server
 FROM netbirdio/dashboard:v2.97.0@sha256:203b2dc90dc20d3fd45729caac7c922deb399586a68202e0a35be099720bac7d AS dashboard
-FROM netbirdio/reverse-proxy:0.83.2@sha256:4cc53c2b8edc29334c29cd05c301ddfd07cfcd619ed7f75697b7dce38b0a98a0 AS proxy
+FROM netbirdio/reverse-proxy:0.84.0@sha256:95e300535962fc103247539824ca216f7c2deb27f5d7c95cc4931d7d2a85556b AS proxy
 FROM cloudron/base:6.0.1@sha256:7b1e729960c3ca312d26e886917ba89483241bba0219ff292858e10d9d5768ee
 
 LABEL org.opencontainers.image.source="https://github.com/marcusquinn/cloudron-netbird-app"
@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the multi-architecture combined server image published for NetBird v0.83.2.
+# Copy the multi-architecture combined server image published for NetBird v0.84.0.
 RUN mkdir -p /app/code/bin
 COPY --from=server /go/bin/netbird-server /app/code/bin/netbird-server
 RUN chmod +x /app/code/bin/netbird-server
